@@ -1,7 +1,17 @@
 package com.toyota;
 
+import com.toyota.config.ServerConfig;
+import org.aeonbits.owner.ConfigFactory;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+
+        final ServerConfig configLoader = ConfigFactory.create(ServerConfig.class);
+
+
+
+
+
+
     }
 }
