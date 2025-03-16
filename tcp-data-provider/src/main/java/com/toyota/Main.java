@@ -51,18 +51,33 @@ public class Main {
 
         executorService.submit(fxDataServer::startServer);
 
+        BigDecimal usdTryBid = BigDecimal.valueOf(configLoader.usdTryBid());
+        BigDecimal usdTryAsk = BigDecimal.valueOf(configLoader.usdTryAsk());
 
+        BigDecimal eurUsdBid = BigDecimal.valueOf(configLoader.eurUsdBid());
+        BigDecimal eurUsdAsk = BigDecimal.valueOf(configLoader.eurUsdAsk());
 
+        BigDecimal gbpUsdBid = BigDecimal.valueOf(configLoader.gbpUsdBid());
+        BigDecimal gbpUsdAsk = BigDecimal.valueOf(configLoader.gbpUsdAsk());
 
+        Rate USD_TRY = new Rate("TCP_USDTRY", usdTryBid, usdTryAsk, LocalDateTime.now());
+        Rate EUR_USD = new Rate("TCP_EURUSD", eurUsdBid, eurUsdAsk, LocalDateTime.now());
+        Rate GBP_USD = new Rate("TCP_GBPUSD", gbpUsdBid, gbpUsdAsk, LocalDateTime.now());
 
+        final List<Rate> INITIAL_RATES = new ArrayList<>();
+        INITIAL_RATES.add(USD_TRY);
+        INITIAL_RATES.add(EUR_USD);
+        INITIAL_RATES.add(GBP_USD);
 
+        final int PUBLISH_FREQUENCY = configLoader.publishFrequency();
 
+        FxDataPublisher publisher = new FxDataPublisher(
+                SUBSCRIPTIONS,
+                INITIAL_RATES,
+                PUBLISH_FREQUENCY
+        );
 
-
-
-
-
-
+        executorService.submit(publisher::startBroadcast);
 
 
 
