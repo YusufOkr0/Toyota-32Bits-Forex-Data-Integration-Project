@@ -1,36 +1,37 @@
 package com.toyota.auth;
 
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class AuthService {
 
-    private final Map<SocketChannel, String> authenticatedClients = new ConcurrentHashMap<>();
+    private final Map<SocketChannel, String> connectedClients;
     private final Map<String, String> authRepository;
 
     public AuthService(Map<String, String> authRepository) {
+        this.connectedClients = new HashMap<>();
         this.authRepository = authRepository;
     }
 
     public boolean authenticateUser(SocketChannel clientChannel, String username, String password) {
         if (authRepository.containsKey(username) && authRepository.get(username).equals(password)) {
-            authenticatedClients.put(clientChannel, username);
+            connectedClients.put(clientChannel, username);
             return true;
         }
         return false;
     }
 
-    public boolean isAuthenticated(SocketChannel clientChannel) {
-        return authenticatedClients.containsKey(clientChannel);
+    public boolean isClientConnected(SocketChannel clientChannel) {
+        return connectedClients.containsKey(clientChannel);
     }
 
-    public boolean isClientAlreadyLoggedIn(String username) {
-        return authenticatedClients.containsValue(username);
+    public boolean isClientHasASession(String username) {
+        return connectedClients.containsValue(username);
     }
 
     public boolean isAuthorizedToDisconnect(SocketChannel clientChannel, String username) {
-        return authenticatedClients.get(clientChannel).equals(username);
+        return connectedClients.get(clientChannel).equals(username);
     }
 
     public boolean isCredentialsValidForDisconnect(String username, String password) {
@@ -38,7 +39,7 @@ public class AuthService {
     }
 
     public void removeAuthenticatedClient(SocketChannel clientChannel) {
-        authenticatedClients.remove(clientChannel);
+        connectedClients.remove(clientChannel);
     }
 
 
