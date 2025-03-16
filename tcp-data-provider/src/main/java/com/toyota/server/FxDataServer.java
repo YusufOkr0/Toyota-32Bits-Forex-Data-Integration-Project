@@ -1,5 +1,7 @@
 package com.toyota.server;
 
+import com.toyota.auth.AuthService;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -21,20 +23,29 @@ public class FxDataServer {
     private static final String SUCCESS_SUBSCRIBED = "SUCCESS|Subscribed to currency pair: ";
     private static final String SUCCESS_UNSUBSCRIBED = "SUCCESS|Unsubscribed from currency pair: ";
     private static final String INFO_NOT_SUBSCRIBED = "INFO|Not subscribed to currency pair: ";
+    private static final String INFO_CLIENT_ALREADY_CONNECTED = "INFO|User already connected";
+    private static final String ERROR_CLIENT_ALREADY_HAS_A_SESSION = "ERROR|User already logged in from another session";
+    private static final String SUCCESS_CONNECTED = "SUCCESS|CONNECTED";
+    private static final String ERROR_INVALID_CREDENTIALS = "ERROR|Invalid credentials";
+    private static final String ERROR_NOT_CONNECTED = "ERROR|Not connected";
+    private static final String ERROR_UNAUTHORIZED_TO_DISCONNECT = "ERROR|You can only disconnect your own session";
+
 
     private final int SERVER_PORT;
     private Selector selector;
 
     private final Set<String> currencyPairs;
     private final ConcurrentHashMap<String,Set<SocketChannel>> subscriptions;
+    private final AuthService authService;
 
     public FxDataServer(int server_port,
                         Set<String> currency_pairs,
-                        ConcurrentHashMap<String, Set<SocketChannel>> subscriptions) {
+                        ConcurrentHashMap<String, Set<SocketChannel>> subscriptions,
+                        AuthService authService) {
         this.SERVER_PORT = server_port;
         this.currencyPairs = currency_pairs;
         this.subscriptions = subscriptions;
-
+        this.authService = authService;
     }
 
 
@@ -121,11 +132,11 @@ public class FxDataServer {
 
         switch (command) {
             case "connect":
-                // handle connection
+                handleConnect(clientChannel,messageParts);
                 break;
 
             case "disconnect":
-                // handle disconnection
+                handleDisconnect(clientChannel,messageParts);
                 break;
 
             case "subscribe":
@@ -194,20 +205,84 @@ public class FxDataServer {
 
 
 
+    private void handleConnect(SocketChannel clientChannel, String[] messageParts) {
+        if (messageParts.length != 3) {
+            sendInfoMessageToClient(clientChannel, "ERROR|Invalid message format");
+            return;
+        }
+
+        String username = messageParts[1].trim();
+        String password = messageParts[2].trim();
+
+        if(authService.isAuthenticated(clientChannel)){
+            sendInfoMessageToClient(clientChannel, INFO_CLIENT_ALREADY_CONNECTED);
+            return;
+        }
+
+        if(authService.isClientAlreadyLoggedIn(username)){          // CLIENT ACCESS TO SERVER THROUGH ONLY ONE CHANNEL.
+            sendInfoMessageToClient(clientChannel,ERROR_CLIENT_ALREADY_HAS_A_SESSION);
+            return;
+        }
+
+       if(authService.authenticateUser(clientChannel,username,password)){       // CHECKING IF CREDENTIALS VALID OR NOT.
+           sendInfoMessageToClient(clientChannel,SUCCESS_CONNECTED);
+           System.out.printf("Client connected: %s",username);
+       }else{
+           sendInfoMessageToClient(clientChannel, ERROR_INVALID_CREDENTIALS);
+       }
+
+    }
+
+
+
+
+    private void handleDisconnect(SocketChannel clientChannel, String[] messageParts) {
+        if (messageParts.length != 3) {
+            sendInfoMessageToClient(clientChannel, "ERROR|Invalid message format");
+            return;
+        }
+
+        String username = messageParts[1].trim();
+        String password = messageParts[2].trim();
+
+        if(!authService.isAuthenticated(clientChannel)){        // FIRST CONNECT TO DISCONNECT.
+            sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
+            return;
+        }
+
+        if(authService.isAuthorizedToDisconnect(clientChannel,username)){   // CHECK IF COMING USERNAME AND CHANNEL MATCHES OR NOT.
+            sendInfoMessageToClient(clientChannel,ERROR_UNAUTHORIZED_TO_DISCONNECT);    // SO THAT CLIENT WILL BE ABLE TO DISCONNECT ONLY ITS OWN SESSION.
+            return;
+        }
+
+        if (!authService.isCredentialsValidForDisconnect(username, password)) {
+            sendInfoMessageToClient(clientChannel,ERROR_INVALID_CREDENTIALS);
+            return;
+        }
+
+        authService.removeAuthenticatedClient(clientChannel);
+        shutDownClient(clientChannel.keyFor(selector));
+
+    }
+
+
+
+
+
+
+
+
+
+
     private void shutDownClient(SelectionKey key){
         try {
-
             SocketChannel clientChannel = (SocketChannel) key.channel();
             System.out.println("Shutting down client: " + clientChannel.getRemoteAddress());
 
-
             subscriptions.values()
                     .forEach(clients -> clients.remove(clientChannel));
-
             key.cancel();
-
             clientChannel.close();
-
         } catch (IOException e) {
             System.err.println("IOException while closing client resources: " + e.getMessage());
         }
