@@ -11,6 +11,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,12 +35,12 @@ public class FxDataServer {
     private final int SERVER_PORT;
     private Selector selector;
 
-    private final Set<String> currencyPairs;
+    private final List<String> currencyPairs;
     private final ConcurrentHashMap<String,Set<SocketChannel>> subscriptions;
     private final AuthService authService;
 
     public FxDataServer(int server_port,
-                        Set<String> currency_pairs,
+                        List<String> currency_pairs,
                         ConcurrentHashMap<String, Set<SocketChannel>> subscriptions,
                         AuthService authService) {
         this.SERVER_PORT = server_port;
@@ -130,6 +131,8 @@ public class FxDataServer {
         String[] messageParts = message.split("\\|");
         String command = messageParts[0];
 
+
+
         switch (command) {
             case "connect":
                 handleConnect(clientChannel,messageParts);
@@ -156,6 +159,13 @@ public class FxDataServer {
 
 
     private void handleSubscribe(SocketChannel clientChannel, String[] messageParts) {
+
+        if(!authService.isClientConnected(clientChannel)){
+            sendInfoMessageToClient(clientChannel,ERROR_NOT_CONNECTED);
+            return;
+        }
+
+
         if (messageParts.length != 2) {
             sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
             return;
@@ -179,6 +189,13 @@ public class FxDataServer {
 
 
     private void handleUnsubscribe(SocketChannel clientChannel, String[] messageParts) {
+
+        if(!authService.isClientConnected(clientChannel)){
+            sendInfoMessageToClient(clientChannel,ERROR_NOT_CONNECTED);
+            return;
+        }
+
+
         if (messageParts.length != 2) {
             sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
             return;
@@ -214,12 +231,12 @@ public class FxDataServer {
         String username = messageParts[1].trim();
         String password = messageParts[2].trim();
 
-        if(authService.isAuthenticated(clientChannel)){
+        if(authService.isClientConnected(clientChannel)){     // IF CONNECTED SEND A APPROPRIATE MESSAGE TO CLIENT.
             sendInfoMessageToClient(clientChannel, INFO_CLIENT_ALREADY_CONNECTED);
             return;
         }
 
-        if(authService.isClientAlreadyLoggedIn(username)){          // CLIENT ACCESS TO SERVER THROUGH ONLY ONE CHANNEL.
+        if(authService.isClientHasASession(username)){          // CLIENT ACCESS TO SERVER THROUGH ONLY ONE CHANNEL.
             sendInfoMessageToClient(clientChannel,ERROR_CLIENT_ALREADY_HAS_A_SESSION);
             return;
         }
@@ -245,12 +262,12 @@ public class FxDataServer {
         String username = messageParts[1].trim();
         String password = messageParts[2].trim();
 
-        if(!authService.isAuthenticated(clientChannel)){        // FIRST CONNECT TO DISCONNECT.
+        if(!authService.isClientConnected(clientChannel)){        // FIRST CONNECT TO DISCONNECT.
             sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
             return;
         }
 
-        if(authService.isAuthorizedToDisconnect(clientChannel,username)){   // CHECK IF COMING USERNAME AND CHANNEL MATCHES OR NOT.
+        if(!authService.isAuthorizedToDisconnect(clientChannel,username)){   // CHECK IF COMING USERNAME AND CHANNEL MATCHES OR NOT.
             sendInfoMessageToClient(clientChannel,ERROR_UNAUTHORIZED_TO_DISCONNECT);    // SO THAT CLIENT WILL BE ABLE TO DISCONNECT ONLY ITS OWN SESSION.
             return;
         }

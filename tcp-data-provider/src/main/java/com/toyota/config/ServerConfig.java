@@ -35,7 +35,7 @@ public interface ServerConfig extends Config {
     int publishFrequency();
 
     @Key("currency.pairs")
-    Set<String> currencyPairs();
+    List<String> currencyPairs();
 
     @Key("user.credentials")
     List<String> userCredentials();
