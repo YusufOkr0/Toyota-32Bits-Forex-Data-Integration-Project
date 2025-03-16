@@ -14,6 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FxDataServer {
 
+    private static final String ERROR_INVALID_COMMAND = "ERROR|Invalid command. Please enter one of these: connect,disconnect,subscribe,unsubscribe";
+    private static final String ERROR_INVALID_MESSAGE_FORMAT = "ERROR|Invalid message format";
+    private static final String ERROR_INVALID_CURRENCY_PAIR = "ERROR|Invalid currency pair: ";
+    private static final String INFO_ALREADY_SUBSCRIBED = "INFO|Already subscribed to currency pair: ";
+    private static final String SUCCESS_SUBSCRIBED = "SUCCESS|Subscribed to currency pair: ";
+    private static final String SUCCESS_UNSUBSCRIBED = "SUCCESS|Unsubscribed from currency pair: ";
+    private static final String INFO_NOT_SUBSCRIBED = "INFO|Not subscribed to currency pair: ";
+
     private final int SERVER_PORT;
     private Selector selector;
 
@@ -113,24 +121,72 @@ public class FxDataServer {
 
         switch (command) {
             case "connect":
+                // handle connection
                 break;
 
             case "disconnect":
+                // handle disconnection
                 break;
 
             case "subscribe":
+                handleSubscribe(clientChannel, messageParts);
                 break;
 
             case "unsubscribe":
+                handleUnsubscribe(clientChannel, messageParts);
                 break;
 
             default:
-                sendInfoMessageToClient(clientChannel, "ERROR|Invalid message format. Please enter one of these: connect,disconnect,subscribe,unsubscribe");
+                sendInfoMessageToClient(clientChannel, ERROR_INVALID_COMMAND);
                 break;
         }
     }
 
 
+
+    private void handleSubscribe(SocketChannel clientChannel, String[] messageParts) {
+        if (messageParts.length != 2) {
+            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
+            return;
+        }
+
+        String currencyPair = messageParts[1].trim().toUpperCase();
+
+        if (!currencyPairs.contains(currencyPair)) {
+            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CURRENCY_PAIR + currencyPair);
+            return;
+        }
+
+        Set<SocketChannel> clients = subscriptions.get(currencyPair);   // Get clients which subscribe a particular rate.
+        if (clients.contains(clientChannel)) {
+            sendInfoMessageToClient(clientChannel, INFO_ALREADY_SUBSCRIBED + currencyPair);
+        } else {
+            clients.add(clientChannel);
+            sendInfoMessageToClient(clientChannel, SUCCESS_SUBSCRIBED + currencyPair);
+        }
+    }
+
+
+    private void handleUnsubscribe(SocketChannel clientChannel, String[] messageParts) {
+        if (messageParts.length != 2) {
+            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
+            return;
+        }
+        String currencyPair = messageParts[1].trim().toUpperCase();
+
+        if (!currencyPairs.contains(currencyPair)) {
+            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CURRENCY_PAIR + currencyPair);
+            return;
+        }
+
+        Set<SocketChannel> clients = subscriptions.get(currencyPair);
+        if (clients.contains(clientChannel)) {
+            clients.remove(clientChannel);
+            sendInfoMessageToClient(clientChannel, SUCCESS_UNSUBSCRIBED + currencyPair);
+        } else {
+            sendInfoMessageToClient(clientChannel, INFO_NOT_SUBSCRIBED + currencyPair);
+        }
+    }
 
 
 
@@ -157,6 +213,8 @@ public class FxDataServer {
         }
     }
 
+
+
     private void sendInfoMessageToClient(SocketChannel clientChannel, String message) {
         ByteBuffer buffer = ByteBuffer.wrap((message + "\r\n").getBytes(StandardCharsets.UTF_8));
         try {
@@ -165,11 +223,6 @@ public class FxDataServer {
             System.err.println("IOException while sending message: " + e.getMessage());
         }
     }
-
-
-
-
-
 
 
 
