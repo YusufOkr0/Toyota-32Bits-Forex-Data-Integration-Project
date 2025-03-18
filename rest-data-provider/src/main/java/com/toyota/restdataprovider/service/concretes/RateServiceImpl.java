@@ -1,6 +1,7 @@
 package com.toyota.restdataprovider.service.concretes;
 
 import com.toyota.restdataprovider.entity.Rate;
+import com.toyota.restdataprovider.service.abstracts.RateService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 @Service
-public class RateServiceImpl {
+public class RateServiceImpl implements RateService {
+
 
     private static final String MINIMUM_CHANGE = "0.003";
     private static final String MAXIMUM_CHANGE = "0.007";
@@ -53,8 +55,11 @@ public class RateServiceImpl {
     }
 
 
-
-
+    /***
+     *    TODO: ADJUST THE VARIABLE AFTER COMMA
+     *    TODO: PRODUCE INCORRECT DATA [ CHANGE PERCENTAGE = 1 % ]
+     *
+     */
     @Scheduled(fixedDelay = 2000L)
     private void updateCurrencyPairs(){
 
