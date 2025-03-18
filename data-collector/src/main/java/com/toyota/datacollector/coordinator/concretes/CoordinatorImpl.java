@@ -24,6 +24,12 @@ public class CoordinatorImpl implements CoordinatorService {
     @Value("${subscribers.config.file}")
     private String CONFIG_FILE;
 
+    @Value("${tcp.platform.username}")
+    private String TCP_USERNAME;
+
+    @Value("${tcp.platform.password}")
+    private String TCP_PASSWORD;
+
     private final ConcurrentHashMap<String, SubscriberService> subscribers;
 
 
@@ -36,7 +42,7 @@ public class CoordinatorImpl implements CoordinatorService {
     public void initializer() {
         System.out.println("Initializing Coordinator...");
         loadSubscribers(CONFIG_FILE);
-
+        startSubscribers();
     }
 
 
@@ -90,7 +96,7 @@ public class CoordinatorImpl implements CoordinatorService {
                 throw new InvalidConfigFileException("'Subscribers' must be a non-null json file.");
             }
 
-            subscribersNode.forEach(subscriberNode -> loadSubscriber(subscribersNode));
+            subscribersNode.forEach(this::loadSubscriber);
 
         } catch (IOException e) {
             throw new SubscriberLoadingException("Error reading configuration file: " + configFile, e);
@@ -98,8 +104,8 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
     private void loadSubscriber(JsonNode subscriberNode) {
-        String platformName = subscriberNode.get("platformName").asText();
-        String className = subscriberNode.get("className").asText();
+        String platformName = subscriberNode.path("platformName").asText(null);
+        String className = subscriberNode.path("className").asText(null);
 
         if (platformName == null || className == null) {
             throw new InvalidConfigFileException("Invalid subscriber entry - missing platformName or className.");
@@ -126,5 +132,21 @@ public class CoordinatorImpl implements CoordinatorService {
         }
     }
 
+
+
+
+
+
+    private void startSubscribers(){
+
+        Thread tcpThread = new Thread(()->{
+            subscribers.get("TCP").connect(
+                    "TCP",
+                    TCP_USERNAME,
+                    TCP_PASSWORD);
+        },"TcpPlatform-Thread");
+
+        tcpThread.start();
+    }
 
 }
