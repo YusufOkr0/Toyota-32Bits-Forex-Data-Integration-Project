@@ -66,6 +66,8 @@ public class FxDataServer {
 
                 while(iterator.hasNext()){
                     SelectionKey key = iterator.next();
+                    iterator.remove();
+
                     try {
                         if (key.isAcceptable()) {
                             handleConnectionRequest(serverChannel);
@@ -73,9 +75,10 @@ public class FxDataServer {
                             handleClientMessage(key);     // Key keeps channel and its events
                         }
                     } catch (IOException e) {
-                        System.err.println("IOException during event handling: " + e.getMessage());
+                        System.err.println("Client connection lost .Client shutting down.");
+                        shutDownClient(key);
                     }
-                    iterator.remove();
+
                 }
             }
             selector.close();

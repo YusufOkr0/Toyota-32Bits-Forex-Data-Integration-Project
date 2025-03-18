@@ -48,7 +48,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
     @Override
     public void onConnect(String platformName, Boolean status) {
-
+        System.out.println(String.format("Platform: %s connection status is: %s",platformName,status));
     }
 
     @Override
@@ -57,19 +57,19 @@ public class CoordinatorImpl implements CoordinatorService {
 
     @Override
     public void onRateAvailable(String platformName, String rateName, Rate rate) {
-
+        System.out.println(rate.toString());
 
     }
 
     @Override
     public void onRateUpdate(String platformName, String rateName, RateFields rateFields) {
-
+        System.out.println(rateFields.toString());
     }
 
 
     @Override
     public void onRateStatus(String platformName, String rateName, RateStatus rateStatus) {
-
+        System.out.println("Platform: " + platformName + ", Rate: " + rateName + ", Status: " + rateStatus.getStatus());
     }
 
 
@@ -85,7 +85,7 @@ public class CoordinatorImpl implements CoordinatorService {
     private void loadSubscribers(String configFile) {
         try (InputStream jsonFile = ClassLoader.getSystemResourceAsStream(configFile)) {
             if (jsonFile == null) {
-                throw new ConfigurationFileNotFoundException("Configuration file not found: " + configFile);
+                throw new ConfigFileNotFoundException("Configuration file not found: " + configFile);
             }
 
             ObjectMapper mapper = new ObjectMapper();

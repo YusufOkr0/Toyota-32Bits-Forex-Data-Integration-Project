@@ -21,5 +21,12 @@ public class RateFields {
         this.timestamp = timestamp;
     }
 
-
+    @Override
+    public String toString() {
+        return "RateFields{" +
+                "ask=" + ask +
+                ", bid=" + bid +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }
