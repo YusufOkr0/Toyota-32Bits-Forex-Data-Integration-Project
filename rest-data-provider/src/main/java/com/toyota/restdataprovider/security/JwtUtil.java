@@ -46,7 +46,6 @@ public class JwtUtil {
 
 
 
-
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractClaimsFromToken(token);
         return claimsResolver.apply(claims);
@@ -60,8 +59,12 @@ public class JwtUtil {
                     .build()
                     .parseSignedClaims(jwtToken)
                     .getPayload();
+        } catch (ExpiredJwtException ex) {
+            throw new InvalidTokenException("Token has expired. Please log in again.");
+        } catch (MalformedJwtException ex) {
+            throw new InvalidTokenException("Token is not valid.");
         } catch (JwtException ex) {
-            throw new InvalidTokenException(ex.getMessage());
+            throw new InvalidTokenException("Token validation failed: " + ex.getMessage());
         }
     }
 

@@ -21,5 +21,13 @@ public class Rate {
 
     private LocalDateTime timestamp;
 
-
+    @Override
+    public String toString() {
+        return "Rate{" +
+                "ask=" + ask +
+                ", name='" + name + '\'' +
+                ", bid=" + bid +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }

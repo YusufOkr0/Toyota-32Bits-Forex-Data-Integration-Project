@@ -22,20 +22,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ExceptionResponse> handleAuthenticationExceptions(
-            AuthenticationException ex,
-            HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request);
-    }
-
-
-    @ExceptionHandler({InvalidPricingPlanException.class,TakenEmailException.class, UsernameAlreadyExistsException.class})
-    public ResponseEntity<ExceptionResponse> handleInvalidPricingPlanException(RuntimeException ex,HttpServletRequest request){
-        return buildErrorResponse(ex, HttpStatus.CONFLICT,request);
-    }
-
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -44,8 +30,36 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return ResponseEntity.badRequest().body(errors);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errors);
     }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ExceptionResponse> handleAuthenticationExceptions(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request);
+    }
+
+
+    @ExceptionHandler({
+            InvalidPricingPlanException.class,
+            TakenEmailException.class,
+            UsernameAlreadyExistsException.class
+    })
+    public ResponseEntity<ExceptionResponse> handleInvalidPricingPlanException(RuntimeException ex,HttpServletRequest request){
+        return buildErrorResponse(ex, HttpStatus.CONFLICT,request);
+    }
+
+    @ExceptionHandler(CurrencyPairNotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleCurrencyPairNotFoundException(CurrencyPairNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request);
+    }
+
+
+
+
 
 
 
