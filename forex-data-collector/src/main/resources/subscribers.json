@@ -1,0 +1,13 @@
+{
+  "subscribers": [
+    {
+      "platformName": "REST",
+      "className": "com.toyota.subscriber.Impl.RestSubscriberImpl"
+    },
+    {
+      "platformName": "TCP",
+      "className": "com.toyota.subscriber.Impl.TcpSubscriberImpl"
+    }
+
+  ]
+}
