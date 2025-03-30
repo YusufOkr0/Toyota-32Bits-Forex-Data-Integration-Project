@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CurrencyPairNotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleCurrencyPairNotFoundException(CurrencyPairNotFoundException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request);
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 
 

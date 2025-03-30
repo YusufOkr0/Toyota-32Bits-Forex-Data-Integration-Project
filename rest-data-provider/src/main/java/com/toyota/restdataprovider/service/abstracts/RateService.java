@@ -1,10 +1,10 @@
 package com.toyota.restdataprovider.service.abstracts;
 
 
-import com.toyota.restdataprovider.entity.Rate;
+import com.toyota.restdataprovider.dtos.response.RateDto;
 
 public interface RateService {
 
-    Rate getCurrencyPair(String rateName);
+    RateDto getCurrencyPair(String rateName);
 
 }

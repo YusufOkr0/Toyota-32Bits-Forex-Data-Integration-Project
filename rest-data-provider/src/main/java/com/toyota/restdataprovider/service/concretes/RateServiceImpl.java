@@ -1,7 +1,7 @@
 package com.toyota.restdataprovider.service.concretes;
 
+import com.toyota.restdataprovider.dtos.response.RateDto;
 import com.toyota.restdataprovider.entity.Rate;
-import com.toyota.restdataprovider.entity.RateLimits;
 import com.toyota.restdataprovider.exception.CurrencyPairNotFoundException;
 import com.toyota.restdataprovider.service.abstracts.RateService;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,13 +22,13 @@ public class RateServiceImpl implements RateService {
     private static final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal("0.004");
 
 
-    private int spikeCounter = 0;
-    private static final int SPIKE_INTERVAL = 10;
     private static final BigDecimal SPIKE_PERCENTAGE = new BigDecimal("0.011");  // % 1.1  FOR NOW. CHECK LATER
+    private static final int SPIKE_INTERVAL = 10;
+    private int spikeCounter = 0;
 
 
     private final Map<String, Rate> currencyPairRepository;
-    private final Map<String, RateLimits> currencyRateLimits;
+
 
 
     public RateServiceImpl(
@@ -47,10 +46,12 @@ public class RateServiceImpl implements RateService {
             @Value("${rest.gbpusd.max-limit}") String gbpUsdMaxLimit
     ) {
         this.currencyPairRepository = new ConcurrentHashMap<>();
-        this.currencyRateLimits = new HashMap<>();
 
-        setUpInitialRates(usdTryBid,usdTryAsk, eurUsdBid, eurUsdAsk, gbpUsdBid, gbpUsdAsk);
-        setUpRateLimits(usdTryMinLimit,usdTryMaxLimit,eurUsdMinLimit,eurUsdMaxLimit,gbpUsdMinLimit,gbpUsdMaxLimit);
+        setUpInitialRates(
+                usdTryBid, usdTryAsk, usdTryMinLimit, usdTryMaxLimit,
+                eurUsdBid, eurUsdAsk, eurUsdMinLimit, eurUsdMaxLimit,
+                gbpUsdBid, gbpUsdAsk, gbpUsdMinLimit, gbpUsdMaxLimit
+        );
 
     }
 
@@ -58,17 +59,23 @@ public class RateServiceImpl implements RateService {
 
 
 
-    public Rate getCurrencyPair(String rateName){
+    public RateDto getCurrencyPair(String rateName){
         if(!currencyPairRepository.containsKey(rateName)){
-            throw new CurrencyPairNotFoundException(String.format("Currency pair: %s not found",rateName));
+            throw new CurrencyPairNotFoundException(String.format("Currency code is invalid: %s",rateName));
         }
-        return currencyPairRepository.get(rateName);
+        Rate rate = currencyPairRepository.get(rateName);
+        return RateDto.builder()
+                .name(rate.getName())
+                .bid(rate.getBid())
+                .ask(rate.getAsk())
+                .timeStamp(rate.getTimestamp())
+                .build();
     }
 
 
 
 
-    @Scheduled(fixedDelay = 100L)
+    @Scheduled(fixedDelay = 2000L)
     private void updateCurrencyPairs(){
         spikeCounter++;
 
@@ -89,15 +96,12 @@ public class RateServiceImpl implements RateService {
                     .multiply(bid);
 
 
-            RateLimits limitOfRate = currencyRateLimits.get(rateName);
-
-            newBid = applyRateBounds(                                // CHECK IF NEW BID IS IN VALID INTERVAL.
-                    newBid,                                          // IF NOT THEN MAKE IT EQUALS TO THE LIMIT.
-                    limitOfRate.getMinLimit(),
-                    limitOfRate.getMaxLimit()
+            newBid = applyRateBounds(                     // CHECK IF NEW BID IS IN VALID INTERVAL.
+                    newBid,                               // IF NOT THEN MAKE IT EQUALS TO THE LIMIT.
+                    rate.getMinLimit(),
+                    rate.getMaxLimit()
             );
             newAsk = newBid.add(spread);
-
 
 
             rate.setBid(newBid.setScale(16, RoundingMode.HALF_UP));        // UPDATE RATES WITH THE NEW VARIABLES
@@ -106,7 +110,6 @@ public class RateServiceImpl implements RateService {
 
             if (rateName.equals("REST_USDTRY"))System.out.println(rate.toString() + "  " + spikeCounter);
         }
-
 
     }
 
@@ -146,57 +149,6 @@ public class RateServiceImpl implements RateService {
 
 
 
-
-
-
-
-
-
-
-    private void setUpInitialRates(
-            String usdTryBid, String usdTryAsk,
-            String eurUsdBid, String eurUsdAsk,
-            String gbpUsdBid, String gbpUsdAsk
-    ) {
-        LocalDateTime localDateTime = LocalDateTime.now();
-
-        currencyPairRepository.put("REST_USDTRY", new Rate(
-                "REST_USDTRY",
-                parseBigDecimal(usdTryBid),
-                parseBigDecimal(usdTryAsk),
-                localDateTime
-        ));
-        currencyPairRepository.put("REST_EURUSD", new Rate(
-                "REST_EURUSD",
-                parseBigDecimal(eurUsdBid),
-                parseBigDecimal(eurUsdAsk),
-                localDateTime
-        ));
-        currencyPairRepository.put("REST_GBPUSD", new Rate(
-                "REST_GBPUSD",
-                parseBigDecimal(gbpUsdBid),
-                parseBigDecimal(gbpUsdAsk),
-                localDateTime
-        ));
-    }
-
-
-
-
-    private void setUpRateLimits(
-            String usdTryMinLimit, String usdTryMaxLimit,
-            String eurUsdMinLimit, String eurUsdMaxLimit,
-            String gbpUsdMinLimit, String gbpUsdMaxLimit) {
-
-        currencyRateLimits.put("REST_USDTRY", new RateLimits(parseBigDecimal(usdTryMinLimit), parseBigDecimal(usdTryMaxLimit)));
-        currencyRateLimits.put("REST_EURUSD", new RateLimits(parseBigDecimal(eurUsdMinLimit), parseBigDecimal(eurUsdMaxLimit)));
-        currencyRateLimits.put("REST_GBPUSD", new RateLimits(parseBigDecimal(gbpUsdMinLimit), parseBigDecimal(gbpUsdMaxLimit)));
-    }
-
-
-
-
-
     private BigDecimal parseBigDecimal(String value) {
         try {
             return new BigDecimal(value);
@@ -205,6 +157,43 @@ public class RateServiceImpl implements RateService {
         }
     }
 
+
+
+
+
+
+    private void setUpInitialRates(
+            String usdTryBid, String usdTryAsk, String usdTryMinLimit, String usdTryMaxLimit,
+            String eurUsdBid, String eurUsdAsk, String eurUsdMinLimit, String eurUsdMaxLimit,
+            String gbpUsdBid, String gbpUsdAsk, String gbpUsdMinLimit, String gbpUsdMaxLimit
+    ) {
+        LocalDateTime timeStamp = LocalDateTime.now();
+
+        currencyPairRepository.put("REST_USDTRY", new Rate(
+                "REST_USDTRY",
+                parseBigDecimal(usdTryBid),
+                parseBigDecimal(usdTryAsk),
+                timeStamp,
+                parseBigDecimal(usdTryMinLimit),
+                parseBigDecimal(usdTryMaxLimit)
+        ));
+        currencyPairRepository.put("REST_EURUSD", new Rate(
+                "REST_EURUSD",
+                parseBigDecimal(eurUsdBid),
+                parseBigDecimal(eurUsdAsk),
+                timeStamp,
+                parseBigDecimal(eurUsdMinLimit),
+                parseBigDecimal(eurUsdMaxLimit)
+        ));
+        currencyPairRepository.put("REST_GBPUSD", new Rate(
+                "REST_GBPUSD",
+                parseBigDecimal(gbpUsdBid),
+                parseBigDecimal(gbpUsdAsk),
+                timeStamp,
+                parseBigDecimal(gbpUsdMinLimit),
+                parseBigDecimal(gbpUsdMaxLimit)
+        ));
+    }
 
 }
 

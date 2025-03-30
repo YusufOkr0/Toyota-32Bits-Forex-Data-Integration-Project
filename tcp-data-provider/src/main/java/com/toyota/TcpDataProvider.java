@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Main {
+public class TcpDataProvider {
     public static void main(String[] args) {
 
         final ExecutorService executorService = Executors.newFixedThreadPool(2);

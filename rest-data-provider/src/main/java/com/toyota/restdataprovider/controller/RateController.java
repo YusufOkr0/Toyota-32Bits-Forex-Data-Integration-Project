@@ -1,5 +1,6 @@
 package com.toyota.restdataprovider.controller;
 
+import com.toyota.restdataprovider.dtos.response.RateDto;
 import com.toyota.restdataprovider.entity.Rate;
 import com.toyota.restdataprovider.service.abstracts.RateService;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,12 @@ public class RateController {
 
 
     @GetMapping(value = "/{rateName}",produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Rate> getCurrencyPair(@PathVariable(name = "rateName") String rateName){
+    ResponseEntity<RateDto> getCurrencyPair(@PathVariable(name = "rateName") String rateName){
 
-        Rate rate = rateService.getCurrencyPair(rateName);
+        RateDto rate = rateService.getCurrencyPair(rateName);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
+                .status(200)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(rate);
 

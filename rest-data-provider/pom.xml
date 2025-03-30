@@ -11,7 +11,7 @@
 	<groupId>com.toyota</groupId>
 	<artifactId>restdataprovider</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>restdataprovider</name>
+	<name>rest-data-provider</name>
 	<description>Demo project for Spring Boot</description>
 
 

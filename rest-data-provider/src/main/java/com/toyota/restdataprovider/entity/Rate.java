@@ -21,6 +21,10 @@ public class Rate {
 
     private LocalDateTime timestamp;
 
+    private BigDecimal minLimit;
+
+    private BigDecimal maxLimit;
+
     @Override
     public String toString() {
         return "Rate{" +
