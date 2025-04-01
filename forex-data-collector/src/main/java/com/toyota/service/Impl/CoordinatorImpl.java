@@ -1,20 +1,24 @@
-package com.toyota.coordinator.Impl;
+package com.toyota.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.source.tree.BinaryTree;
 import com.toyota.config.ConfigUtil;
-import com.toyota.coordinator.CoordinatorService;
+import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
 import com.toyota.entity.RateStatus;
 import com.toyota.exception.*;
-import com.toyota.subscriber.SubscriberService;
+import com.toyota.service.SubscriberService;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 public class CoordinatorImpl implements CoordinatorService {
+
     private final String CONFIG_FILE;
 
     private final String TCP_USERNAME;
@@ -23,10 +27,12 @@ public class CoordinatorImpl implements CoordinatorService {
     private final String REST_USERNAME;
     private final String REST_PASSWORD;
 
-    private static final int MAX_RETRY_COUNT = 12;
+    private final int CONNECTION_RETRY_LIMIT;
 
-    private final Map<String, SubscriberService> subscribers;
+    private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
+    private final Map<String, SubscriberService> subscribers;
+
 
     public CoordinatorImpl() {
         this.CONFIG_FILE = ConfigUtil.getValue("subscribers.config.file");
@@ -34,6 +40,9 @@ public class CoordinatorImpl implements CoordinatorService {
         this.TCP_PASSWORD = ConfigUtil.getValue("tcp.platform.password");
         this.REST_USERNAME = ConfigUtil.getValue("rest.platform.username");
         this.REST_PASSWORD = ConfigUtil.getValue("rest.platform.password");
+        this.CONNECTION_RETRY_LIMIT = ConfigUtil.getIntValue("connection.retry.limit");
+
+        this.exchangeRates = ConfigUtil.getExchangeRates();
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
@@ -49,13 +58,10 @@ public class CoordinatorImpl implements CoordinatorService {
         System.out.println(Thread.currentThread().getName());
         if (status) {
             retryCounts.put(platformName, 0);
-
-            subscribers.get(platformName)
-                    .subscribe(platformName, "USDTRY");
-            subscribers.get(platformName)
-                    .subscribe(platformName, "EURUSD");
-            subscribers.get(platformName)
-                    .subscribe(platformName, "GBPUSD");
+            SubscriberService subscriber = subscribers.get(platformName);
+            exchangeRates.forEach(rate -> {
+                subscriber.subscribe(platformName, rate);
+            });
         } else {
             retryToConnectWithDelay(platformName);
         }
@@ -88,8 +94,8 @@ public class CoordinatorImpl implements CoordinatorService {
         System.out.println("retry to connect ...");
 
         int retryCount = retryCounts.getOrDefault(platformName, 0);
-        if (retryCount >= MAX_RETRY_COUNT) {
-            System.err.printf("Max retries (%d) reached for %s. Giving up.\n", MAX_RETRY_COUNT, platformName);
+        if (retryCount >= CONNECTION_RETRY_LIMIT) {
+            System.err.printf("Max retries (%d) reached for %s. Giving up.\n", CONNECTION_RETRY_LIMIT, platformName);
             return;
         }
 
@@ -155,7 +161,7 @@ public class CoordinatorImpl implements CoordinatorService {
             subscribers.put(platformName, subscriber);
 
         } catch (ClassNotFoundException e) {
-            throw new ClassLoadingException(String.format("Class: %s not found.",className));
+            throw new ClassLoadingException(String.format("Class: %s not found.", className));
         } catch (Exception e) {
             throw new ClassLoadingException(String.format("Unexpected exception while loading subscriber class: %s.", className), e);
         }

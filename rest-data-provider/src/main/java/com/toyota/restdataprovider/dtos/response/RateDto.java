@@ -19,5 +19,5 @@ public class RateDto {
 
     private BigDecimal ask;
 
-    private LocalDateTime timeStamp;
+    private LocalDateTime timestamp;
 }

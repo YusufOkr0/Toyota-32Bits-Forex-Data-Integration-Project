@@ -2,6 +2,9 @@ package com.toyota.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 public class ConfigUtil {
@@ -50,6 +53,16 @@ public class ConfigUtil {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid integer value for " + key + ": " + value, e);
         }
+    }
+
+    public static List<String> getExchangeRates(){
+        loadProperties();
+        String exchangeRates = properties.getProperty("exchange.rates");
+        if (exchangeRates != null && !exchangeRates.isBlank()) {
+            return Arrays.asList(exchangeRates.split(","));
+        }
+
+        return new ArrayList<>();
     }
 
 }

@@ -1,20 +1,23 @@
 package com.toyota.dtos.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ApiKeyResponse {
-    private String ApiKey;
+
+    @JsonProperty("apiKey")
+    private String apiKey;
 
     public ApiKeyResponse(String apiKey) {
-        ApiKey = apiKey;
+        this.apiKey = apiKey;
+    }
+    public ApiKeyResponse() {
     }
 
-
     public String getApiKey() {
-        return ApiKey;
+        return apiKey;
     }
 
     public void setApiKey(String apiKey) {
-        ApiKey = apiKey;
+        this.apiKey = apiKey;
     }
-
-
 }

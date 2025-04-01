@@ -1,4 +1,4 @@
-package com.toyota.subscriber;
+package com.toyota.service;
 
 
 public interface SubscriberService  {

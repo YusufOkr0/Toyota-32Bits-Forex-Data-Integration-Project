@@ -4,10 +4,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class Rate {
-    private final String name;
-    private final BigDecimal bid;
-    private final BigDecimal ask;
-    private final LocalDateTime timestamp;
+    private String name;
+    private BigDecimal bid;
+    private BigDecimal ask;
+    private LocalDateTime timestamp;
+
+    public Rate() {
+    }
 
     public Rate(String name, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp) {
         this.name = name;
@@ -16,10 +19,41 @@ public class Rate {
         this.timestamp = timestamp;
     }
 
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public BigDecimal getBid() {
+        return bid;
+    }
+
+    public void setBid(BigDecimal bid) {
+        this.bid = bid;
+    }
+
+    public BigDecimal getAsk() {
+        return ask;
+    }
+
+    public void setAsk(BigDecimal ask) {
+        this.ask = ask;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
 
     @Override
     public String toString() {
         return "Rate{ask=" + ask + ", name='" + name + "', bid=" + bid + ", timestamp=" + timestamp + "}";
     }
+
 }

@@ -2,12 +2,11 @@
   "subscribers": [
     {
       "platformName": "REST",
-      "className": "com.toyota.subscriber.Impl.RestSubscriberImpl"
+      "className": "com.toyota.service.Impl.RestSubscriberImpl"
     },
     {
       "platformName": "TCP",
-      "className": "com.toyota.subscriber.Impl.TcpSubscriberImpl"
+      "className": "com.toyota.service.Impl.TcpSubscriberImpl"
     }
-
   ]
 }

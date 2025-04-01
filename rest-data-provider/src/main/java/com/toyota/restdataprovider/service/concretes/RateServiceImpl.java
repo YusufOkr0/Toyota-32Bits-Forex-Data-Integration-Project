@@ -68,7 +68,7 @@ public class RateServiceImpl implements RateService {
                 .name(rate.getName())
                 .bid(rate.getBid())
                 .ask(rate.getAsk())
-                .timeStamp(rate.getTimestamp())
+                .timestamp(rate.getTimestamp())
                 .build();
     }
 

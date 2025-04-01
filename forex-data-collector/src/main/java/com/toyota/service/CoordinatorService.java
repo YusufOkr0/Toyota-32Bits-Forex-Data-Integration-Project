@@ -1,4 +1,4 @@
-package com.toyota.coordinator;
+package com.toyota.service;
 
 import com.toyota.entity.Rate;
 import com.toyota.entity.RateStatus;
