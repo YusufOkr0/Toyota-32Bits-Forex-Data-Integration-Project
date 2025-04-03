@@ -64,7 +64,7 @@ public class JwtUtil {
         } catch (MalformedJwtException ex) {
             throw new InvalidTokenException("Token is not valid.");
         } catch (JwtException ex) {
-            throw new InvalidTokenException("Token validation failed: " + ex.getMessage());
+            throw new InvalidTokenException("Token validation failed.");
         }
     }
 

@@ -2,7 +2,6 @@ package com.toyota.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.source.tree.BinaryTree;
 import com.toyota.config.ConfigUtil;
 import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
@@ -95,7 +94,8 @@ public class CoordinatorImpl implements CoordinatorService {
 
         int retryCount = retryCounts.getOrDefault(platformName, 0);
         if (retryCount >= CONNECTION_RETRY_LIMIT) {
-            System.err.printf("Max retries (%d) reached for %s. Giving up.\n", CONNECTION_RETRY_LIMIT, platformName);
+            System.err.printf("Maximum retry limit (%d) reached for platform '%s'. Connection attempts abandoned.%n", CONNECTION_RETRY_LIMIT, platformName);
+
             return;
         }
 
@@ -114,7 +114,7 @@ public class CoordinatorImpl implements CoordinatorService {
                     break;
             }
         } catch (InterruptedException e) {
-            System.err.println("Exception when trying to connect with delay: " + e.getMessage());
+            System.err.printf("Failed to reconnect to platform '%s' after delay due to interruption: %s%n", platformName, e.getMessage());
             Thread.currentThread().interrupt();
         }
     }
@@ -122,7 +122,7 @@ public class CoordinatorImpl implements CoordinatorService {
     private void loadSubscribers() {
         try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
             if (jsonFile == null) {
-                throw new ConfigFileNotFoundException("Configuration file not found in the classpath: " + CONFIG_FILE);
+                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", CONFIG_FILE));
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -130,13 +130,13 @@ public class CoordinatorImpl implements CoordinatorService {
             JsonNode subscribersNode = rootNode.get("subscribers");
 
             if (subscribersNode == null || !subscribersNode.isArray()) {
-                throw new InvalidConfigFileException("'Subscribers' must be a non-null json file.");
+                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", CONFIG_FILE));
             }
 
             subscribersNode.forEach(this::loadSubscriber);
 
         } catch (IOException e) {
-            throw new SubscriberLoadingException("Error reading configuration file: " + CONFIG_FILE, e);
+            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", CONFIG_FILE, e.getMessage()));
         }
     }
 
@@ -145,13 +145,13 @@ public class CoordinatorImpl implements CoordinatorService {
         String className = subscriberNode.path("className").asText(null);
 
         if (platformName == null || className == null) {
-            throw new InvalidConfigFileException("Invalid subscriber entry - missing platformName or className.");
+            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", CONFIG_FILE));
         }
 
         try {
             Class<?> clazz = Class.forName(className);
             if (!SubscriberService.class.isAssignableFrom(clazz)) {
-                throw new InvalidSubscriberClassException("Class " + className + " is not a valid SubscriberService implementation.");
+                throw new InvalidSubscriberClassException(String.format("Class '%s' is not a valid implementation of SubscriberService.", className));
             }
 
             SubscriberService subscriber = (SubscriberService) clazz
@@ -161,9 +161,9 @@ public class CoordinatorImpl implements CoordinatorService {
             subscribers.put(platformName, subscriber);
 
         } catch (ClassNotFoundException e) {
-            throw new ClassLoadingException(String.format("Class: %s not found.", className));
+            throw new ClassLoadingException(String.format("Class '%s' not found in the classpath.", className));
         } catch (Exception e) {
-            throw new ClassLoadingException(String.format("Unexpected exception while loading subscriber class: %s.", className), e);
+            throw new ClassLoadingException(String.format("Unexpected error while loading subscriber class '%s': %s", className, e.getMessage()), e);
         }
     }
 

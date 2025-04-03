@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN">
+    <Properties>
+
+        <Property name="logDir">tcp-data-provider/logs</Property>
+        <Property name="rollingFileSize">10 MB</Property>
+        <Property name="rollingMaxFiles">7</Property>
+        <Property name="deleteMaxAge">P30D</Property>
+
+        <Property name="filePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable</Property>
+        <Property name="ConsolePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable
+        </Property>
+        <!--    <Property name="consoleHighlightPattern">%d{HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=purple} [%t] %cyan{%c{1.}} - %msg%n%throwable</Property>-->
+    </Properties>
+
+    <Appenders>
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="${ConsolePattern}"/>
+        </Console>
+
+        <RollingFile name="RollingFileAppender"
+                     fileName="${logDir}/tcp-data-provider.log"
+                     filePattern="${logDir}/archive/tcp-data-provider-%d{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="${filePattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="${rollingFileSize}"/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="${rollingMaxFiles}">
+                <Delete basePath="${archiveDir}" maxDepth="1">
+                    <IfFileName glob="tcp-data-provider-*.log.gz"/>
+                    <IfLastModified age="${deleteMaxAge}"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+
+        </RollingFile>
+
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="RollingFileAppender"/>
+        </Root>
+
+        <Logger name="com.toyota" level="DEBUG" additivity="false">
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="RollingFileAppender"/>
+        </Logger>
+
+    </Loggers>
+
+</Configuration>

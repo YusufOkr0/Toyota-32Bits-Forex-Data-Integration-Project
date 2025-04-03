@@ -1,5 +1,8 @@
 package com.toyota.config;
 
+import com.toyota.exception.ConfigFileLoadingException;
+import com.toyota.exception.ConfigFileNotFoundException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -8,7 +11,7 @@ import java.util.List;
 import java.util.Properties;
 
 public class ConfigUtil {
-    private static final String CONFIG_FILE_PATH = "application.properties";
+    private static final String CONFIG_FILE_NAME = "application.properties";
     private static Properties properties = null;
 
     private ConfigUtil() {
@@ -17,13 +20,13 @@ public class ConfigUtil {
     private static void loadProperties() {
         if (properties == null) {
             properties = new Properties();
-            try (InputStream inputStream = ConfigUtil.class.getClassLoader().getResourceAsStream(CONFIG_FILE_PATH)) {
+            try (InputStream inputStream = ConfigUtil.class.getClassLoader().getResourceAsStream(CONFIG_FILE_NAME)) {
                 if (inputStream == null) {
-                    throw new IllegalStateException("Configuration file not found: " + CONFIG_FILE_PATH);
+                    throw new ConfigFileNotFoundException("Configuration file not found: " + CONFIG_FILE_NAME);
                 }
                 properties.load(inputStream);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to load configuration file: " + CONFIG_FILE_PATH, e);
+                throw new ConfigFileLoadingException("Failed to load configuration file: " + CONFIG_FILE_NAME);
             }
         }
     }
@@ -51,7 +54,7 @@ public class ConfigUtil {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid integer value for " + key + ": " + value, e);
+            throw new IllegalArgumentException(String.format("Invalid integer value for %s:%s",key,value));
         }
     }
 
