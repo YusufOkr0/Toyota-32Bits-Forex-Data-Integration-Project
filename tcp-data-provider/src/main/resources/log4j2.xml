@@ -9,14 +9,15 @@
         <Property name="deleteMaxAge">P30D</Property>
 
         <Property name="filePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable</Property>
-        <Property name="ConsolePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable
+        <!--<Property name="ConsolePattern">%d{yyyy-MM-dd HH:mm:ss.SSS}  %-5level  [%t]  -  %logger{36}  -  %msg%n%throwable</Property>-->
+        <Property name="consoleHighlightPattern">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red bold, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=magenta} - [%t] %style{%c{1.}}{cyan} - %msg%n%throwable
         </Property>
-        <!--    <Property name="consoleHighlightPattern">%d{HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=purple} [%t] %cyan{%c{1.}} - %msg%n%throwable</Property>-->
     </Properties>
 
     <Appenders>
         <Console name="ConsoleAppender" target="SYSTEM_OUT">
-            <PatternLayout pattern="${ConsolePattern}"/>
+            <PatternLayout pattern="${consoleHighlightPattern}" disableAnsi="false"/>   <!-- disable ansi for colorize the logs -->
         </Console>
 
         <RollingFile name="RollingFileAppender"
@@ -46,7 +47,7 @@
             <AppenderRef ref="RollingFileAppender"/>
         </Root>
 
-        <Logger name="com.toyota" level="DEBUG" additivity="false">
+        <Logger name="com.toyota" level="INFO" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>

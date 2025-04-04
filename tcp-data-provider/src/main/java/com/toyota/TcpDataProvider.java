@@ -42,27 +42,28 @@ public class TcpDataProvider {
 
         final AuthService AUTH_SERVICE = new AuthService(AUTH_REPOSITORY);
 
-        FxDataServer fxDataServer = new FxDataServer(
-                SERVER_PORT,
-                CURRENCY_PAIRS,
-                SUBSCRIPTIONS,
-                AUTH_SERVICE
-        );
 
-        executorService.submit(fxDataServer::startServer);
+
+
 
         BigDecimal usdTryBid = BigDecimal.valueOf(configLoader.usdTryBid());
         BigDecimal usdTryAsk = BigDecimal.valueOf(configLoader.usdTryAsk());
+        BigDecimal usdTryMinLimit = BigDecimal.valueOf(configLoader.usdTryMinLimit());
+        BigDecimal usdTryMaxLimit = BigDecimal.valueOf(configLoader.usdTryMaxLimit());
 
         BigDecimal eurUsdBid = BigDecimal.valueOf(configLoader.eurUsdBid());
         BigDecimal eurUsdAsk = BigDecimal.valueOf(configLoader.eurUsdAsk());
+        BigDecimal eurUsdMinLimit = BigDecimal.valueOf(configLoader.eurUsdMinLimit());
+        BigDecimal eurUsdMaxLimit = BigDecimal.valueOf(configLoader.eurUsdMaxLimit());
 
         BigDecimal gbpUsdBid = BigDecimal.valueOf(configLoader.gbpUsdBid());
         BigDecimal gbpUsdAsk = BigDecimal.valueOf(configLoader.gbpUsdAsk());
+        BigDecimal gbpUsdMinLimit = BigDecimal.valueOf(configLoader.gbpUsdMinLimit());
+        BigDecimal gbpUsdMaxLimit = BigDecimal.valueOf(configLoader.gbpUsdMaxLimit());
 
-        Rate USD_TRY = new Rate("TCP_USDTRY", usdTryBid, usdTryAsk, LocalDateTime.now());
-        Rate EUR_USD = new Rate("TCP_EURUSD", eurUsdBid, eurUsdAsk, LocalDateTime.now());
-        Rate GBP_USD = new Rate("TCP_GBPUSD", gbpUsdBid, gbpUsdAsk, LocalDateTime.now());
+        Rate USD_TRY = new Rate("TCP_USDTRY", usdTryBid, usdTryAsk, LocalDateTime.now(),usdTryMinLimit,usdTryMaxLimit);
+        Rate EUR_USD = new Rate("TCP_EURUSD", eurUsdBid, eurUsdAsk, LocalDateTime.now(),eurUsdMinLimit,eurUsdMaxLimit);
+        Rate GBP_USD = new Rate("TCP_GBPUSD", gbpUsdBid, gbpUsdAsk, LocalDateTime.now(),gbpUsdMinLimit,gbpUsdMaxLimit);
 
         final List<Rate> INITIAL_RATES = new ArrayList<>();
         INITIAL_RATES.add(USD_TRY);
@@ -71,15 +72,23 @@ public class TcpDataProvider {
 
         final int PUBLISH_FREQUENCY = configLoader.publishFrequency();
 
+
+
+        FxDataServer fxDataServer = new FxDataServer(
+                SERVER_PORT,
+                CURRENCY_PAIRS,
+                SUBSCRIPTIONS,
+                AUTH_SERVICE
+        );
+
         FxDataPublisher publisher = new FxDataPublisher(
                 SUBSCRIPTIONS,
                 INITIAL_RATES,
                 PUBLISH_FREQUENCY
         );
 
+        executorService.submit(fxDataServer::startServer);
         executorService.submit(publisher::startBroadcast);
-
-
 
 
     }

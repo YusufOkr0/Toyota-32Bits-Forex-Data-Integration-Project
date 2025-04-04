@@ -33,6 +33,7 @@
             <artifactId>log4j-core</artifactId>
             <version>${Log4j-version}</version>
         </dependency>
+
     </dependencies>
 
 
