@@ -135,13 +135,13 @@ public class RateServiceImpl implements RateService {
     }
 
 
-    private BigDecimal applyRateBounds(BigDecimal rate, BigDecimal minLimit, BigDecimal maxLimit) {
-        if (rate.compareTo(minLimit) < 0) {
+    private BigDecimal applyRateBounds(BigDecimal bidValue, BigDecimal minLimit, BigDecimal maxLimit) {
+        if (bidValue.compareTo(minLimit) < 0) {
             return minLimit;
-        } else if (rate.compareTo(maxLimit) > 0) {
+        } else if (bidValue.compareTo(maxLimit) > 0) {
             return maxLimit;
         }
-        return rate;
+        return bidValue;
     }
 
 

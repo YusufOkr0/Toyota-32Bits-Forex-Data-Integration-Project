@@ -13,12 +13,28 @@ public class Rate {
 
     private LocalDateTime timestamp;
 
+    private BigDecimal minLimit;
+
+    private BigDecimal maxLimit;
+
+
     public Rate(String rateName, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp) {
         this.rateName = rateName;
         this.bid = bid;
         this.ask = ask;
         this.timestamp = timestamp;
     }
+
+    public Rate(String rateName, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp,BigDecimal minLimit,BigDecimal maxLimit) {
+        this.rateName = rateName;
+        this.bid = bid;
+        this.ask = ask;
+        this.timestamp = timestamp;
+        this.minLimit = minLimit;
+        this.maxLimit = maxLimit;
+    }
+
+
 
     public String getRateName() {
         return rateName;
@@ -52,5 +68,19 @@ public class Rate {
         this.timestamp = timestamp;
     }
 
+    public BigDecimal getMinLimit() {
+        return minLimit;
+    }
 
+    public void setMinLimit(BigDecimal minLimit) {
+        this.minLimit = minLimit;
+    }
+
+    public BigDecimal getMaxLimit() {
+        return maxLimit;
+    }
+
+    public void setMaxLimit(BigDecimal maxLimit) {
+        this.maxLimit = maxLimit;
+    }
 }

@@ -14,6 +14,7 @@ import com.toyota.service.SubscriberService;
 
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -26,7 +27,7 @@ import java.util.concurrent.*;
 
 public class RestSubscriberImpl implements SubscriberService {
 
-    private static final long SUBSCRIPTION_DELAY_MS = 2000;
+    private static final long SUBSCRIPTION_DELAY_MS = 500;
 
     private String API_KEY;
     private final String BASE_URL;
@@ -81,7 +82,6 @@ public class RestSubscriberImpl implements SubscriberService {
             System.err.printf("Failed to connect to Rest Platform. Message: %s", e.getMessage());
             coordinator.onConnect(platformName, false);
         }
-
 
     }
 
@@ -142,10 +142,15 @@ public class RestSubscriberImpl implements SubscriberService {
                         coordinator.onRateUpdate(platformName, rateName, rate);
                     }
                 } else {
-                    System.err.format("Rate request failed. Rate: {%s} Status Code: {%s}", rateName, response.statusCode());
+                    System.err.printf("Failed to fetch rate '%s' from platform '%s': HTTP status code %d%n", rateName, platformName, response.statusCode());
                 }
-            } catch (IOException | InterruptedException e) {
-                System.err.printf("Unexpected error while getting rate information: %s",e.getMessage());
+            } catch (JsonProcessingException e) {
+                System.err.printf("Failed to parse authentication response for platform '%s': %s%n", platformName, e.getMessage());
+            } catch (IOException e) {
+                System.err.printf("I/O error while connecting to REST platform '%s': %s%n", platformName, e.getMessage());
+            } catch (InterruptedException e) {
+                System.err.printf("Connection to REST platform '%s' interrupted: %s%n", platformName, e.getMessage());
+                Thread.currentThread().interrupt();
             }
         };
     }
@@ -174,7 +179,6 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private HttpClient configureHttpClient() {
         return HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
                 .build();
     }
 

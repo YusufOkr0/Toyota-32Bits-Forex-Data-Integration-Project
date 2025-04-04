@@ -64,8 +64,6 @@ public class TcpSubscriberImpl implements SubscriberService {
             System.err.println("TCP bağlantı hatası: " + e.getMessage());
             closeResources();
             coordinator.onConnect(platformName, false);
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("Invalid TCP server port: " + ConfigUtil.getValue("tcp.server.port"), e);
         }
     }
 

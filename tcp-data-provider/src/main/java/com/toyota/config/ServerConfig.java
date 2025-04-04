@@ -13,23 +13,41 @@ public interface ServerConfig extends Config {
     @DefaultValue("8090")
     int serverPort();
 
-    @Key("TCP_USDTRY.bid")
+    @Key("tcp.usdtry.bid")
     double usdTryBid();
 
-    @Key("TCP_USDTRY.ask")
+    @Key("tcp.usdtry.ask")
     double usdTryAsk();
 
-    @Key("TCP_EURUSD.bid")
+    @Key("tcp.usdtry.min-limit")
+    double usdTryMinLimit();
+
+    @Key("tcp.usdtry.max-limit")
+    double usdTryMaxLimit();
+
+    @Key("tcp.eurusd.bid")
     double eurUsdBid();
 
-    @Key("TCP_EURUSD.ask")
+    @Key("tcp.eurusd.ask")
     double eurUsdAsk();
 
-    @Key("TCP_GBPUSD.bid")
+    @Key("tcp.eurusd.min-limit")
+    double eurUsdMinLimit();
+
+    @Key("tcp.eurusd.max-limit")
+    double eurUsdMaxLimit();
+
+    @Key("tcp.gbpusd.bid")
     double gbpUsdBid();
 
-    @Key("TCP_GBPUSD.ask")
+    @Key("tcp.gbpusd.ask")
     double gbpUsdAsk();
+
+    @Key("tcp.gbpusd.min-limit")
+    double gbpUsdMinLimit();
+
+    @Key("tcp.gbpusd.max-limit")
+    double gbpUsdMaxLimit();
 
     @Key("publish.frequency")
     int publishFrequency();

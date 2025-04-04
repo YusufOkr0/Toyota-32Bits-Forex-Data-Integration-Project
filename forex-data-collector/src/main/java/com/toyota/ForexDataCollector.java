@@ -7,5 +7,6 @@ public class ForexDataCollector {
     public static void main(String[] args) {
 
         CoordinatorService coordinatorService = new CoordinatorImpl();
+
     }
 }
