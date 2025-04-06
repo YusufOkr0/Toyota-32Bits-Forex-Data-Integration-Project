@@ -19,7 +19,7 @@ public class RedisServiceImpl implements RedisService {
     private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
 
     private static final String RAW_RATES_KEY = "RawRates::";
-    private static final String CALCULATED_RATES_KEY = "Calculated::";
+    private static final String CALCULATED_RATES_KEY = "CalculatedRates::";
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
@@ -34,9 +34,13 @@ public class RedisServiceImpl implements RedisService {
     public void saveRawRate(String platformName, String rateName, Rate rate) {
         try (Jedis jedis = jedisPool.getResource()) {
 
-            String hashKey = RAW_RATES_KEY + platformName;
+            System.out.println(rate.toString());
+            String redisKey = RAW_RATES_KEY + platformName;
+            String hashKey = platformName + rateName;
+
             String rateInJson = objectMapper.writeValueAsString(rate);
-            jedis.hset(hashKey,rateName,rateInJson);
+
+            jedis.hset(redisKey,hashKey,rateInJson);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
             logger.error("Error when save raw rates to the redis.",e);

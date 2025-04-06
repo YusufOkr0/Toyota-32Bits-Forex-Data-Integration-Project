@@ -53,7 +53,11 @@ public class Rate {
 
     @Override
     public String toString() {
-        return "Rate{ask=" + ask + ", name='" + name + "', bid=" + bid + ", timestamp=" + timestamp + "}";
+        return "Rate{" +
+                "name='" + name + '\'' +
+                ", bid=" + bid +
+                ", ask=" + ask +
+                ", timestamp=" + timestamp +
+                '}';
     }
-
 }

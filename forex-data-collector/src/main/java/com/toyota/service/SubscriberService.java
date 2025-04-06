@@ -3,9 +3,9 @@ package com.toyota.service;
 
 public interface SubscriberService  {
 
-    void connect(String platformName, String username, String password);
+    void connect(String platformName);
 
-    void disConnect(String platformName, String username, String password);
+    void disConnect();
 
     void subscribe(String platformName, String rateName);
 

@@ -12,6 +12,4 @@ public interface CoordinatorService {
 
     void onRateUpdate(String platformName, String rateName, Rate rate);
 
-    void onRateStatus(String platformName, String rateName, RateStatus rateStatus);
-
 }

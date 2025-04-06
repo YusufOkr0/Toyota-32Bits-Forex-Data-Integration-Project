@@ -20,13 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CoordinatorImpl implements CoordinatorService {
 
     private final String SUBSCRIBERS_CONFIG_FILE;
-
-    private final String TCP_USERNAME;
-    private final String TCP_PASSWORD;
-
-    private final String REST_USERNAME;
-    private final String REST_PASSWORD;
-
     private final int CONNECTION_RETRY_LIMIT;
 
     private final List<String> exchangeRates;
@@ -37,10 +30,6 @@ public class CoordinatorImpl implements CoordinatorService {
 
     public CoordinatorImpl() {
         this.SUBSCRIBERS_CONFIG_FILE = ConfigUtil.getValue("subscribers.config.file");
-        this.TCP_USERNAME = ConfigUtil.getValue("tcp.platform.username");
-        this.TCP_PASSWORD = ConfigUtil.getValue("tcp.platform.password");
-        this.REST_USERNAME = ConfigUtil.getValue("rest.platform.username");
-        this.REST_PASSWORD = ConfigUtil.getValue("rest.platform.password");
         this.CONNECTION_RETRY_LIMIT = ConfigUtil.getIntValue("connection.retry.limit");
 
         this.exchangeRates = ConfigUtil.getExchangeRates();
@@ -109,11 +98,11 @@ public class CoordinatorImpl implements CoordinatorService {
             switch (platformName) {
                 case "REST":
                     subscribers.get(platformName)
-                            .connect(platformName, REST_USERNAME, REST_PASSWORD);
+                            .connect(platformName);
                     break;
                 case "TCP":
                     subscribers.get(platformName)
-                            .connect(platformName, TCP_USERNAME, TCP_PASSWORD);
+                            .connect(platformName);
                     break;
             }
         } catch (InterruptedException e) {
@@ -172,11 +161,11 @@ public class CoordinatorImpl implements CoordinatorService {
 
     private void startSubscribers() {
         Thread tcpThread = new Thread(() -> {
-            subscribers.get("TCP").connect("TCP", TCP_USERNAME, TCP_PASSWORD);
+            subscribers.get("TCP").connect("TCP");
         }, "TcpPlatform-Thread");
 
         Thread restThread = new Thread(() -> {
-            subscribers.get("REST").connect("REST", REST_USERNAME, REST_PASSWORD);
+            subscribers.get("REST").connect("REST");
         }, "RestPlatform-Thread");
 
         restThread.start();

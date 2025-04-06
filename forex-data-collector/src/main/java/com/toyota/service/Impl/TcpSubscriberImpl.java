@@ -24,6 +24,9 @@ public class TcpSubscriberImpl implements SubscriberService {
     private final int SERVER_PORT;
     private final String SERVER_HOST;
 
+    private final String USERNAME;
+    private final String PASSWORD;
+
     private Socket socket;
     private BufferedReader reader;
     private PrintWriter writer;
@@ -37,17 +40,19 @@ public class TcpSubscriberImpl implements SubscriberService {
 
 
         this.SERVER_HOST = ConfigUtil.getValue("tcp.platform.host");
-        this.SERVER_PORT = Integer.parseInt(ConfigUtil.getValue("tcp.platform.port"));
+        this.SERVER_PORT = ConfigUtil.getIntValue("tcp.platform.port");
+        this.USERNAME = ConfigUtil.getValue("tcp.platform.username");
+        this.PASSWORD = ConfigUtil.getValue("tcp.platform.password");
     }
 
     @Override
-    public void connect(String platformName, String username, String password) {
+    public void connect(String platformName) {
         try {
             socket = new Socket(SERVER_HOST, SERVER_PORT);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             writer = new PrintWriter(socket.getOutputStream(), true);
 
-            sendMessageToServer(String.format("connect|%s|%s", username, password));
+            sendMessageToServer(String.format("connect|%s|%s", USERNAME, PASSWORD));
 
             String serverMessage = reader.readLine();
 
@@ -56,7 +61,7 @@ public class TcpSubscriberImpl implements SubscriberService {
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("SUCCESS")) {
                 System.out.println("Bağlantı başarılı.");
-                listenToIncomingRates(platformName);
+                executorService.submit(() -> listenToIncomingRates(platformName));
                 coordinator.onConnect(platformName, true);
             }
 
@@ -68,8 +73,8 @@ public class TcpSubscriberImpl implements SubscriberService {
     }
 
     @Override
-    public void disConnect(String platformName, String username, String password) {
-        sendMessageToServer(String.format("disconnect|%s|%s", username, password));
+    public void disConnect() {
+        sendMessageToServer(String.format("disconnect|%s|%s", USERNAME, PASSWORD));
         closeResources();
     }
 
@@ -84,36 +89,35 @@ public class TcpSubscriberImpl implements SubscriberService {
     }
 
     private void listenToIncomingRates(String platformName) {
-        executorService.submit(() -> {
-            try {
-                Set<String> receivedRates = new HashSet<>();
+        try {
+            Set<String> receivedRates = new HashSet<>();
 
-                String serverMessage;
-                while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
-                    if (serverMessage.startsWith("TCP_")) {
-                        String rateName = serverMessage.substring(4, 10);
+            String serverMessage;
+            while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
+                if (serverMessage.startsWith("TCP_")) {
 
-                        Rate rate = getRateObjectFromMessage(serverMessage);
-                        if (!receivedRates.contains(rateName)) {
-                            receivedRates.add(rateName);
-                            coordinator.onRateAvailable(platformName, rateName, rate);
-                        } else {
-                            coordinator.onRateUpdate(platformName, rateName, rate);
-                        }
+                    String rateName = serverMessage.substring(4, 10);
+                    Rate rate = convertMessageToRate(serverMessage);
+
+                    if (receivedRates.contains(rateName)) {
+                        coordinator.onRateUpdate(platformName, rateName, rate);
+                    } else {
+                        receivedRates.add(rateName);
+                        coordinator.onRateAvailable(platformName, rateName, rate);
                     }
                 }
-            } catch (IOException e) {
-                System.err.println("Sunucu dinleme hatası: " + e.getMessage());
-                closeResources();
-                coordinator.onDisConnect(platformName, true);
             }
-        });
+        } catch (IOException e) {
+            System.err.println("Sunucu dinleme hatası: " + e.getMessage());
+            closeResources();
+            coordinator.onDisConnect(platformName, true);
+        }
     }
 
-    private Rate getRateObjectFromMessage(String message) {
+    private Rate convertMessageToRate(String message) {
         String[] messageParts = message.split("\\|");
 
-        String rateName = messageParts[0].replace("TCP_", "");
+        String rateName = messageParts[0];
         BigDecimal bid = new BigDecimal(messageParts[1].split(":")[1]);
         BigDecimal ask = new BigDecimal(messageParts[2].split(":")[1]);
         String timeStampStr = messageParts[3].split(":", 2)[1];
@@ -135,6 +139,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (reader != null) reader.close();
             if (writer != null) writer.close();
             if (socket != null) socket.close();
+            if (!executorService.isShutdown()) executorService.shutdown();
         } catch (IOException e) {
             System.err.println("Bağlantıyı kapatma hatası: " + e.getMessage());
         }
