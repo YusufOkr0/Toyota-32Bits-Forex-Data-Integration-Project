@@ -7,6 +7,7 @@ import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
 import com.toyota.entity.RateStatus;
 import com.toyota.exception.*;
+import com.toyota.service.RedisService;
 import com.toyota.service.SubscriberService;
 
 import java.io.IOException;
@@ -18,33 +19,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CoordinatorImpl implements CoordinatorService {
 
-    private final String CONFIG_FILE;
-
-    private final String TCP_USERNAME;
-    private final String TCP_PASSWORD;
-
-    private final String REST_USERNAME;
-    private final String REST_PASSWORD;
-
+    private final String SUBSCRIBERS_CONFIG_FILE;
     private final int CONNECTION_RETRY_LIMIT;
 
     private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
     private final Map<String, SubscriberService> subscribers;
+    private final RedisService redisService;
 
 
     public CoordinatorImpl() {
-        this.CONFIG_FILE = ConfigUtil.getValue("subscribers.config.file");
-        this.TCP_USERNAME = ConfigUtil.getValue("tcp.platform.username");
-        this.TCP_PASSWORD = ConfigUtil.getValue("tcp.platform.password");
-        this.REST_USERNAME = ConfigUtil.getValue("rest.platform.username");
-        this.REST_PASSWORD = ConfigUtil.getValue("rest.platform.password");
+        this.SUBSCRIBERS_CONFIG_FILE = ConfigUtil.getValue("subscribers.config.file");
         this.CONNECTION_RETRY_LIMIT = ConfigUtil.getIntValue("connection.retry.limit");
 
         this.exchangeRates = ConfigUtil.getExchangeRates();
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
+        this.redisService = new RedisServiceImpl();
 
         loadSubscribers();
         startSubscribers();
@@ -82,7 +74,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
     @Override
     public void onRateUpdate(String platformName, String rateName, Rate rate) {
-        System.out.println(rate.toString());
+        redisService.saveRawRate(platformName,rateName,rate);
     }
 
     @Override
@@ -106,11 +98,11 @@ public class CoordinatorImpl implements CoordinatorService {
             switch (platformName) {
                 case "REST":
                     subscribers.get(platformName)
-                            .connect(platformName, REST_USERNAME, REST_PASSWORD);
+                            .connect(platformName);
                     break;
                 case "TCP":
                     subscribers.get(platformName)
-                            .connect(platformName, TCP_USERNAME, TCP_PASSWORD);
+                            .connect(platformName);
                     break;
             }
         } catch (InterruptedException e) {
@@ -120,9 +112,9 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
     private void loadSubscribers() {
-        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(SUBSCRIBERS_CONFIG_FILE)) {
             if (jsonFile == null) {
-                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", CONFIG_FILE));
+                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", SUBSCRIBERS_CONFIG_FILE));
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -130,13 +122,13 @@ public class CoordinatorImpl implements CoordinatorService {
             JsonNode subscribersNode = rootNode.get("subscribers");
 
             if (subscribersNode == null || !subscribersNode.isArray()) {
-                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", CONFIG_FILE));
+                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", SUBSCRIBERS_CONFIG_FILE));
             }
 
             subscribersNode.forEach(this::loadSubscriber);
 
         } catch (IOException e) {
-            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", CONFIG_FILE, e.getMessage()));
+            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", SUBSCRIBERS_CONFIG_FILE, e.getMessage()));
         }
     }
 
@@ -145,7 +137,7 @@ public class CoordinatorImpl implements CoordinatorService {
         String className = subscriberNode.path("className").asText(null);
 
         if (platformName == null || className == null) {
-            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", CONFIG_FILE));
+            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", SUBSCRIBERS_CONFIG_FILE));
         }
 
         try {
@@ -169,11 +161,11 @@ public class CoordinatorImpl implements CoordinatorService {
 
     private void startSubscribers() {
         Thread tcpThread = new Thread(() -> {
-            subscribers.get("TCP").connect("TCP", TCP_USERNAME, TCP_PASSWORD);
+            subscribers.get("TCP").connect("TCP");
         }, "TcpPlatform-Thread");
 
         Thread restThread = new Thread(() -> {
-            subscribers.get("REST").connect("REST", REST_USERNAME, REST_PASSWORD);
+            subscribers.get("REST").connect("REST");
         }, "RestPlatform-Thread");
 
         restThread.start();
