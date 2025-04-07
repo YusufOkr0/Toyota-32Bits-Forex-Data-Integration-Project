@@ -16,16 +16,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class FxDataPublisher {
 
+    private final BigDecimal MAXIMUM_RATE_CHANGE;
+    private final BigDecimal MINIMUM_RATE_CHANGE;
 
-    private static final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal("0.004");
-    private static final BigDecimal MINIMUM_RATE_CHANGE = new BigDecimal("0.001");
-
-    private static final BigDecimal SPIKE_PERCENTAGE = new BigDecimal("0.011");  // % 1.1  FOR NOW. CHECK LATER
-    private static final int SPIKE_INTERVAL = 30;
+    private final BigDecimal SPIKE_PERCENTAGE;
+    private final int SPIKE_INTERVAL;
     private int spikeCounter = 0;
 
     private final int PUBLISH_FREQUENCY;
@@ -36,21 +34,23 @@ public class FxDataPublisher {
     private static final Logger logger = LogManager.getLogger(FxDataPublisher.class);
 
 
-
     public FxDataPublisher(
             ConcurrentHashMap<String, Set<SocketChannel>> subscriptions,
             List<Rate> initial_rates,
-            int publishFrequency) {
+            int publishFrequency,
+            int spikeInterval,
+            BigDecimal spikePercentage,
+            BigDecimal minimumRateChange,
+            BigDecimal maximumRateChange
+    ) {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.subscriptions = subscriptions;
         this.rates = initial_rates;
         this.PUBLISH_FREQUENCY = publishFrequency;
-
-        logger.info("FxDataPublisher initialized.");
-        logger.info("Publish Frequency: {} ms", PUBLISH_FREQUENCY);
-        logger.info("Spike Interval: every {} cycles", SPIKE_INTERVAL);
-        logger.info("Spike Percentage: {}", SPIKE_PERCENTAGE);
-        logger.info("Initial rates: {}", initial_rates.stream().map(Rate::getRateName).collect(Collectors.toSet()));
+        this.SPIKE_INTERVAL = spikeInterval;
+        this.SPIKE_PERCENTAGE = spikePercentage;
+        this.MINIMUM_RATE_CHANGE = minimumRateChange;
+        this.MAXIMUM_RATE_CHANGE = maximumRateChange;
     }
 
     public void startBroadcast() {
@@ -60,7 +60,6 @@ public class FxDataPublisher {
                 PUBLISH_FREQUENCY,
                 TimeUnit.MILLISECONDS
         );
-        logger.info("FX data broadcast scheduler started with fixed delay of {} ms.", PUBLISH_FREQUENCY);
     }
 
     private void publishRates() {
