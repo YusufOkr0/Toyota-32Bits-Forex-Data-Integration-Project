@@ -52,25 +52,19 @@ public class FxDataServer {
         this.currencyPairs = currency_pairs;
         this.subscriptions = subscriptions;
         this.authService = authService;
-        logger.trace("FxDataServer initialized. Port: {}, Supported Currency Pairs: {}", server_port, currency_pairs);
     }
 
 
     public void startServer() {
-        logger.trace("startServer method called.");
-        logger.info("Starting FX Data Server on port: {}", SERVER_PORT);
+        logger.trace("startServer method begins.");
         try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
             this.selector = Selector.open();
             serverChannel.bind(new InetSocketAddress(SERVER_PORT));
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            logger.info("Server started successfully and listening for connections...");
-
             while (selector.isOpen() && serverChannel.isOpen()) {
-
                 selector.select();
-                logger.trace("Selector woke up.");
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 Iterator<SelectionKey> iterator = selectedKeys.iterator();
 
