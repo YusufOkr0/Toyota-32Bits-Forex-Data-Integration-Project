@@ -4,6 +4,11 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+/***
+ * isClientAuthenticated ve isClientHasASession fonksiyonlari benzer olabilir.
+ * Eger iki farkli ip adresinden (channel'dan) ayni username ve password girilir ise
+ * bu ayirt edilmeli ve handle edilmeli.
+ */
 public class AuthService {
 
     private final Map<SocketChannel, String> connectedClients;
@@ -14,31 +19,29 @@ public class AuthService {
         this.authRepository = authRepository;
     }
 
-    public boolean authenticateUser(SocketChannel clientChannel, String username, String password) {
-        if (authRepository.containsKey(username) && authRepository.get(username).equals(password)) {
-            connectedClients.put(clientChannel, username);
-            return true;
-        }
-        return false;
+    public boolean authenticateUser(String username, String password) {
+        return authRepository.containsKey(username) && authRepository.get(username).equals(password);
     }
 
-    public boolean isClientConnected(SocketChannel clientChannel) {
+    public void createSession(SocketChannel clientChannel,String username){
+        connectedClients.put(clientChannel, username);
+    }
+
+    public boolean isClientAuthenticated(SocketChannel clientChannel) {
         return connectedClients.containsKey(clientChannel);
     }
 
+    /***
+     *  THIS IS GONNA CHECK IF USERNAME IS TAKEN OR NOT?
+     * @param username
+     * @return
+     */
     public boolean isClientHasASession(String username) {
         return connectedClients.containsValue(username);
     }
 
-    public boolean isAuthorizedToDisconnect(SocketChannel clientChannel, String username) {
-        return connectedClients.get(clientChannel).equals(username);
-    }
 
-    public boolean isCredentialsValidForDisconnect(String username, String password) {
-        return authRepository.containsKey(username) && authRepository.get(username).equals(password);
-    }
-
-    public void removeAuthenticatedClient(SocketChannel clientChannel) {
+    public void disconnect(SocketChannel clientChannel) {
         connectedClients.remove(clientChannel);
     }
 

@@ -20,12 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FxDataServer {
 
-    private static final String ERROR_NOT_CONNECTED = "ERROR|Not connected";
+    private static final String ERROR_NOT_CONNECTED = "ERROR|Not Authenticated";
     private static final String ERROR_INVALID_COMMAND = "ERROR|Invalid command. Please enter one of these: connect,disconnect,subscribe,unsubscribe";
     private static final String ERROR_INVALID_CREDENTIALS = "ERROR|Invalid credentials";
     private static final String ERROR_INVALID_CURRENCY_PAIR = "ERROR|Invalid currency pair: ";
     private static final String ERROR_INVALID_MESSAGE_FORMAT = "ERROR|Invalid message format";
-    private static final String ERROR_UNAUTHORIZED_TO_DISCONNECT = "ERROR|You can only disconnect your own session";
     private static final String ERROR_CLIENT_ALREADY_HAS_A_SESSION = "ERROR|User already logged in from another session";
     private static final String INFO_NOT_SUBSCRIBED = "INFO|Not subscribed to currency pair: ";
     private static final String INFO_ALREADY_SUBSCRIBED = "INFO|Already subscribed to currency pair: ";
@@ -127,8 +126,8 @@ public class FxDataServer {
             int bytesRead = clientChannel.read(buffer);
 
             if (bytesRead == -1) {
-                logger.info("Client {} disconnected gracefully (read returned -1).", clientChannel.getRemoteAddress());
                 shutDownClient(key);
+                logger.info("Client {} disconnected gracefully (read returned -1).", clientChannel.getRemoteAddress());
             } else if (bytesRead > 0) {
                 buffer.flip();
                 byte[] byteData = new byte[buffer.remaining()];
@@ -164,7 +163,7 @@ public class FxDataServer {
                 break;
 
             case "disconnect":
-                handleDisconnect(clientChannel, messageParts);
+                shutDownClient(clientChannel.keyFor(selector));
                 break;
 
             case "subscribe":
@@ -187,8 +186,9 @@ public class FxDataServer {
     private void handleSubscribe(SocketChannel clientChannel, String[] messageParts) {
         logger.trace("handleSubscribe method called.");
 
-        if (!authService.isClientConnected(clientChannel)) {
-            logger.warn("Subscribe attempt failed for {}: Not connected.", getClientAddressSafe(clientChannel));
+        // KULLANICI AUTHENTICATED OLMADI ISE.
+        if (!authService.isClientAuthenticated(clientChannel)) {
+            logger.warn("Subscribe attempt failed for {}: Not authenticated.", getClientAddressSafe(clientChannel));
             sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
             return;
         }
@@ -225,7 +225,8 @@ public class FxDataServer {
     private void handleUnsubscribe(SocketChannel clientChannel, String[] messageParts) {
         logger.trace("handleUnsubscribe method called.");
 
-        if (!authService.isClientConnected(clientChannel)) {
+        // handleSubscribe'daki MANTIK ILE AYNI EGER AUTHENTICATION ISLEMI YAPILMAMIS ISE MESSAGE YOLLA.
+        if (!authService.isClientAuthenticated(clientChannel)) {
             logger.warn("Unsubscribe attempt failed for {}: Not connected.", getClientAddressSafe(clientChannel));
             sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
             return;
@@ -237,8 +238,8 @@ public class FxDataServer {
             sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
             return;
         }
-        String currencyPair = messageParts[1].trim().toUpperCase();
 
+        String currencyPair = messageParts[1].trim().toUpperCase();
         if (!currencyPairs.contains(currencyPair)) {
             logger.warn("Unsubscribe attempt failed for {}: Invalid currency pair '{}'.", getClientAddressSafe(clientChannel), currencyPair);
             sendInfoMessageToClient(clientChannel, ERROR_INVALID_CURRENCY_PAIR + currencyPair);
@@ -251,7 +252,7 @@ public class FxDataServer {
             clients.remove(clientChannel);
             sendInfoMessageToClient(clientChannel, SUCCESS_UNSUBSCRIBED + currencyPair);
         } else {
-            logger.info("Client {} was not subscribed to {} or pair not found.", getClientAddressSafe(clientChannel), currencyPair);
+            logger.info("Client {} was not subscribed to {}.", getClientAddressSafe(clientChannel), currencyPair);
             sendInfoMessageToClient(clientChannel, INFO_NOT_SUBSCRIBED + currencyPair);
         }
         logger.trace("handleUnsubscribe method finished.");
@@ -263,75 +264,48 @@ public class FxDataServer {
 
         if (messageParts.length != 3) {
             logger.warn("Connect attempt failed for {}: Invalid message format.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, "ERROR|Invalid message format");
+            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
             return;
         }
 
         String username = messageParts[1].trim();
         String password = messageParts[2].trim();
 
-        if (authService.isClientConnected(clientChannel)) {
-            logger.warn("Connect attempt failed for {}: Already connected.", getClientAddressSafe(clientChannel));
+        // AYNI IP ILE BIR DAHA CONNECT DENER ISE.
+        if (authService.isClientAuthenticated(clientChannel)) {
+            logger.warn("Authentication attempt failed for {}: Already authenticated.", getClientAddressSafe(clientChannel));
             sendInfoMessageToClient(clientChannel, INFO_CLIENT_ALREADY_CONNECTED);
             return;
         }
 
+        // FARKLI IP'DEN AYNI USERNAME VE PASSWORD GELIR ISE.
         if (authService.isClientHasASession(username)) {
-            logger.warn("Connect attempt failed for user '{}' from {}: User already has an active session.", username, getClientAddressSafe(clientChannel));
+            logger.warn("Authentication attempt failed for user '{}' from {}: User already has an active session.", username, getClientAddressSafe(clientChannel));
             sendInfoMessageToClient(clientChannel, ERROR_CLIENT_ALREADY_HAS_A_SESSION);
             return;
         }
 
-        if (authService.authenticateUser(clientChannel, username, password)) {
-            logger.info("Client {} successfully authenticated as user '{}'.", getClientAddressSafe(clientChannel), username);
+        // USERNAME PASSWORD DOGRU ISE, CHANNELDAN GELEN USERNAME'I CHANNEL'A MÜHÜRLE (createSession ile).
+        // BÖYLECE BASKA BIR CHANNEL AYNI USERNAME ILE BAGLANAMACAK.
+        if (authService.authenticateUser(username, password)) {
+            authService.createSession(clientChannel,username);
             sendInfoMessageToClient(clientChannel, SUCCESS_CONNECTED);
+            logger.info("Client {} successfully authenticated and logged in as user '{}'.", getClientAddressSafe(clientChannel), username);
         } else {
-            logger.warn("Connect attempt failed for user '{}' from {}: Invalid credentials.", username, getClientAddressSafe(clientChannel));
+            logger.warn("Authentication attempt failed for user '{}' from {}: Invalid credentials.", username, getClientAddressSafe(clientChannel));
             sendInfoMessageToClient(clientChannel, ERROR_INVALID_CREDENTIALS);
         }
-
         logger.trace("handleConnect method finished.");
     }
 
 
-    private void handleDisconnect(SocketChannel clientChannel, String[] messageParts) {
-        logger.trace("handleDisconnect method called.");
-
-        if (messageParts.length != 3) {
-            logger.warn("Disconnect attempt failed for {}: Invalid message format.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, "ERROR|Invalid message format");
-            return;
-        }
-
-        String username = messageParts[1].trim();
-        String password = messageParts[2].trim();
-
-        if (!authService.isClientConnected(clientChannel)) {
-            logger.warn("Disconnect attempt failed for {}: Not connected.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
-            return;
-        }
-
-        if (!authService.isAuthorizedToDisconnect(clientChannel, username)) {
-            logger.warn("Unauthorized disconnect attempt from channel {} for user '{}'.", getClientAddressSafe(clientChannel), username);
-            sendInfoMessageToClient(clientChannel, ERROR_UNAUTHORIZED_TO_DISCONNECT);
-            return;
-        }
-
-        if (!authService.isCredentialsValidForDisconnect(username, password)) {
-            logger.warn("Disconnect attempt failed for user '{}' from {}: Invalid credentials provided for disconnect.", username, getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CREDENTIALS);
-            return;
-        }
-
-        authService.removeAuthenticatedClient(clientChannel);
-        logger.info("Disconnect attempt was successful for {}.",getClientAddressSafe(clientChannel));
-        shutDownClient(clientChannel.keyFor(selector));
-
-        logger.trace("handleDisconnect method finished.");
-    }
-
-
+    /***
+     * Abonelikleri sonlandir.
+     * Client'disconnect et. Session da kapatilir.
+     * Socket'in Key'i ni iptal et.
+     * Socket'i kapat
+     * @param key
+     */
     private void shutDownClient(SelectionKey key) {
         logger.trace("shutDownClient method called.");
 
@@ -341,6 +315,7 @@ public class FxDataServer {
 
             subscriptions.values()
                     .forEach(clients -> clients.remove(clientChannel));
+            authService.disconnect(clientChannel);
             key.cancel();
             clientChannel.close();
 
@@ -367,7 +342,7 @@ public class FxDataServer {
                 return clientChannel.getRemoteAddress().toString();
             }
         } catch (IOException e) {
-            logger.warn("IOException when try to get client address.");
+            logger.warn("IOException when try to get client address. {}",e.getMessage(),e);
         }
         return "unknown address";
     }

@@ -29,6 +29,12 @@ public class TcpDataProvider {
 
         final int SERVER_PORT = config.getIntValue("server.port");
         final int PUBLISH_FREQUENCY = config.getIntValue("publish.frequency");
+        final int SPIKE_INTERVAL = config.getIntValue("spike.interval");
+
+        final BigDecimal SPIKE_PERCENTAGE = new BigDecimal(config.getStringValue("spike.percentage"));
+        final BigDecimal MINIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("minimum.rate.change"));
+        final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("maximum.rate.change"));
+
         final List<String> CURRENCY_PAIRS = Arrays.stream(config.getStringValue("currency.pairs").split(",")).toList();
         final List<String> USER_CREDENTIALS = Arrays.stream(config.getStringValue("user.credentials").split(",")).toList();
 
@@ -74,12 +80,6 @@ public class TcpDataProvider {
         }
 
 
-        final int SPIKE_INTERVAL = config.getIntValue("spike.interval");
-        final BigDecimal SPIKE_PERCENTAGE = new BigDecimal(config.getStringValue("spike.percentage"));
-        final BigDecimal MINIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("minimum.rate.change"));
-        final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("maximum.rate.change"));
-
-
 
         FxDataServer fxDataServer = new FxDataServer(
                 SERVER_PORT,
@@ -115,7 +115,7 @@ public class TcpDataProvider {
             logger.info("   • {}", pair);
         }
 
-        logger.info(">> Authorized Users [{}]:", AUTH_REPOSITORY.size());
+        logger.info(">> Available Usernames [{}]:", AUTH_REPOSITORY.size());
         for (String username : AUTH_REPOSITORY.keySet()) {
             logger.info("   • {}", username);
         }
