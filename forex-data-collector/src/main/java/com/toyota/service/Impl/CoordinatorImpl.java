@@ -2,12 +2,11 @@ package com.toyota.service.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.toyota.config.ConfigUtil;
+import com.toyota.config.ApplicationConfig;
 import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
-import com.toyota.entity.RateStatus;
 import com.toyota.exception.*;
-import com.toyota.service.RedisService;
+import com.toyota.service.RateManager;
 import com.toyota.service.SubscriberService;
 
 import java.io.IOException;
@@ -15,6 +14,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class CoordinatorImpl implements CoordinatorService {
@@ -24,19 +25,24 @@ public class CoordinatorImpl implements CoordinatorService {
 
     private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
+
+    private final RateManager rateManager;
+    private final ApplicationConfig appConfig;
+    private final ExecutorService executorService;
     private final Map<String, SubscriberService> subscribers;
-    private final RedisService redisService;
+
+    public CoordinatorImpl(RateManager rateManager, ApplicationConfig applicationConfig) {
+        this.appConfig = applicationConfig;
+        this.SUBSCRIBERS_CONFIG_FILE = appConfig.getValue("subscribers.config.file");
+        this.CONNECTION_RETRY_LIMIT = appConfig.getIntValue("connection.retry.limit");
 
 
-    public CoordinatorImpl() {
-        this.SUBSCRIBERS_CONFIG_FILE = ConfigUtil.getValue("subscribers.config.file");
-        this.CONNECTION_RETRY_LIMIT = ConfigUtil.getIntValue("connection.retry.limit");
-
-        this.exchangeRates = ConfigUtil.getExchangeRates();
+        this.exchangeRates = appConfig.getExchangeRates();
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
-        this.redisService = new RedisServiceImpl();
+        this.rateManager = rateManager;
+        this.executorService = Executors.newFixedThreadPool(10);
 
         loadSubscribers();
         startSubscribers();
@@ -45,70 +51,69 @@ public class CoordinatorImpl implements CoordinatorService {
 
     @Override
     public void onConnect(String platformName, Boolean status) {
-        System.out.printf("Platform: %s connection status is: %s\n", platformName, status);
-        System.out.println(Thread.currentThread().getName());
-        if (status) {
-            retryCounts.put(platformName, 0);
-            SubscriberService subscriber = subscribers.get(platformName);
-            exchangeRates.forEach(rate -> {
-                subscriber.subscribe(platformName, rate);
-            });
-        } else {
-            retryToConnectWithDelay(platformName);
-        }
+        executorService.execute(() -> {
+            System.out.printf("Platform: %s connection status is: %s\n", platformName, status);
+            if (status) {
+                retryCounts.put(platformName, 0);
+                SubscriberService subscriber = subscribers.get(platformName);
+                exchangeRates.forEach(rate -> {
+                    subscriber.subscribe(platformName, rate);
+                });
+            } else {
+                retryToConnectWithDelay(platformName);
+            }
+        });
     }
 
     @Override
     public void onDisConnect(String platformName, Boolean status) {
-        if (status) {
-            retryToConnectWithDelay(platformName);
-        } else {
-            System.out.printf("Connection status is false for platform: %s%n", platformName);
-        }
+        executorService.execute(() -> {
+            if (status) {
+                retryToConnectWithDelay(platformName);
+            }
+        });
     }
 
     @Override
     public void onRateAvailable(String platformName, String rateName, Rate rate) {
-        System.out.println(rate.toString());
+        executorService.execute(() -> rateManager.handleFirstInComingRate(platformName, rateName, rate));
     }
 
     @Override
     public void onRateUpdate(String platformName, String rateName, Rate rate) {
-        redisService.saveRawRate(platformName,rateName,rate);
+        executorService.execute(() -> rateManager.handleRateUpdate(platformName, rateName, rate));
     }
 
-    @Override
-    public void onRateStatus(String platformName, String rateName, RateStatus rateStatus) {
-    }
 
     private void retryToConnectWithDelay(String platformName) {
-        System.out.println("retry to connect ...");
-
         int retryCount = retryCounts.getOrDefault(platformName, 0);
-        if (retryCount >= CONNECTION_RETRY_LIMIT) {
-            System.err.printf("Maximum retry limit (%d) reached for platform '%s'. Connection attempts abandoned.%n", CONNECTION_RETRY_LIMIT, platformName);
 
+        if (retryCount >= CONNECTION_RETRY_LIMIT) {
+            System.err.printf("Maximum retry limit (%d) reached for platform '%s'. Connection attempts abandoned.%n",
+                    CONNECTION_RETRY_LIMIT, platformName);
+            // TODO:: ADD MAIL LOGIC.
             return;
         }
 
-        retryCounts.put(platformName, ++retryCount);
+        retryCounts.put(platformName, retryCount + 1);
 
         try {
-            Thread.sleep(10000);
-            switch (platformName) {
-                case "REST":
-                    subscribers.get(platformName)
-                            .connect(platformName);
-                    break;
-                case "TCP":
-                    subscribers.get(platformName)
-                            .connect(platformName);
-                    break;
-            }
+            System.out.printf("Retrying to connect to '%s' in 10 seconds (attempt %d/%d)%n",
+                    platformName, retryCount + 1, CONNECTION_RETRY_LIMIT);
+            Thread.sleep(10_000);
+
+            subscribers.get(platformName).connect(platformName);
+
         } catch (InterruptedException e) {
-            System.err.printf("Failed to reconnect to platform '%s' after delay due to interruption: %s%n", platformName, e.getMessage());
+            System.err.printf("Reconnect interrupted for '%s': %s%n", platformName, e.getMessage());
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void startSubscribers() {
+        subscribers.forEach((platformName,subscriber) -> {
+            executorService.execute(() -> subscriber.connect(platformName));
+        });
     }
 
     private void loadSubscribers() {
@@ -147,8 +152,8 @@ public class CoordinatorImpl implements CoordinatorService {
             }
 
             SubscriberService subscriber = (SubscriberService) clazz
-                    .getDeclaredConstructor(CoordinatorService.class)
-                    .newInstance(this);
+                    .getDeclaredConstructor(CoordinatorService.class, ApplicationConfig.class)
+                    .newInstance(this, this.appConfig);
 
             subscribers.put(platformName, subscriber);
 
@@ -159,16 +164,4 @@ public class CoordinatorImpl implements CoordinatorService {
         }
     }
 
-    private void startSubscribers() {
-        Thread tcpThread = new Thread(() -> {
-            subscribers.get("TCP").connect("TCP");
-        }, "TcpPlatform-Thread");
-
-        Thread restThread = new Thread(() -> {
-            subscribers.get("REST").connect("REST");
-        }, "RestPlatform-Thread");
-
-        restThread.start();
-        tcpThread.start();
-    }
 }
