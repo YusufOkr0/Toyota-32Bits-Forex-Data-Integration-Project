@@ -106,6 +106,7 @@ public class RestSubscriberImpl implements SubscriberService {
                 .GET()
                 .build();
 
+
         Runnable subscribeJob = createSubscribeJob(
                 platformName,
                 rateName,
@@ -149,7 +150,7 @@ public class RestSubscriberImpl implements SubscriberService {
                     }
                 } else {
                     System.err.printf("Failed to fetch rate '%s' from platform '%s': HTTP status code %d%n", rateName, platformName, response.statusCode());
-                    coordinator.onDisConnect(platformName,true);
+                    coordinator.onDisConnect(platformName);
                 }
             } catch (Exception e){
                 System.err.printf("Exception when try to fetch rate: {%s}. Exception Message: {%s}.\n",rateName,e.getMessage());

@@ -75,7 +75,7 @@ public class RateServiceImpl implements RateService {
 
 
 
-    @Scheduled(fixedDelay = 500L)
+    @Scheduled(fixedDelay = 2000L)
     private void updateCurrencyPairs(){
         spikeCounter++;
 

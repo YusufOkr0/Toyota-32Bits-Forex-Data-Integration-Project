@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 
 public class CoordinatorImpl implements CoordinatorService {
 
+    private static final int THREAD_POOL_SIZE = 10;
     private final String SUBSCRIBERS_CONFIG_FILE;
     private final int CONNECTION_RETRY_LIMIT;
 
@@ -35,15 +36,19 @@ public class CoordinatorImpl implements CoordinatorService {
         this.appConfig = applicationConfig;
         this.SUBSCRIBERS_CONFIG_FILE = appConfig.getValue("subscribers.config.file");
         this.CONNECTION_RETRY_LIMIT = appConfig.getIntValue("connection.retry.limit");
-
-
         this.exchangeRates = appConfig.getExchangeRates();
+
+        this.rateManager = rateManager;
+        this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
-        this.rateManager = rateManager;
-        this.executorService = Executors.newFixedThreadPool(10);
 
+
+        // create the context for per thread.
+        for(int i = 1; i <= THREAD_POOL_SIZE; i++){
+            executorService.execute(rateManager::warmUpCalculationService);
+        }
         loadSubscribers();
         startSubscribers();
     }
@@ -66,11 +71,9 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
     @Override
-    public void onDisConnect(String platformName, Boolean status) {
+    public void onDisConnect(String platformName) {
         executorService.execute(() -> {
-            if (status) {
-                retryToConnectWithDelay(platformName);
-            }
+            retryToConnectWithDelay(platformName);
         });
     }
 
@@ -111,7 +114,7 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
     private void startSubscribers() {
-        subscribers.forEach((platformName,subscriber) -> {
+        subscribers.forEach((platformName, subscriber) -> {
             executorService.execute(() -> subscriber.connect(platformName));
         });
     }

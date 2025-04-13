@@ -123,7 +123,7 @@ public class TcpSubscriberImpl implements SubscriberService {
         } finally {
             closeResources();
             System.out.println("Stopped listening to the server.");
-            coordinator.onDisConnect(platformName, true);
+            coordinator.onDisConnect(platformName);
         }
     }
 

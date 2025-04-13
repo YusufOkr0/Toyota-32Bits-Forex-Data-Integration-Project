@@ -5,7 +5,7 @@ services:
     image: yusufokr0/tcp-forex-data-provider
     container_name: tcp_data_provider_app
     ports:
-      - "8095:8090"
+      - "8090:8090"
     environment:
       - CURRENCY_PAIRS=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
       - TCP_USDTRY_BID=37.9973
@@ -20,6 +20,6 @@ services:
       - TCP_GBPUSD_ASK=1.395
       - TCP_GBPUSD_MIN_LIMIT=1.11245
       - TCP_GBPUSD_MAX_LIMIT=1.42142
-      - PUBLISH_FREQUENCY=500
+      - PUBLISH_FREQUENCY=10000
       - USER_CREDENTIALS=user|pass,admin|admin
       - SPIKE_INTERVAL=10

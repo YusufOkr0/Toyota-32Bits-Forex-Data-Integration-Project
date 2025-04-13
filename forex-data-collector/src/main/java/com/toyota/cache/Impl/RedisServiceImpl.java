@@ -1,12 +1,13 @@
-package com.toyota.service.Impl;
+package com.toyota.cache.Impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.toyota.cache.CacheService;
 import com.toyota.config.ApplicationConfig;
+import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
-import com.toyota.service.RedisService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -19,10 +20,11 @@ import redis.clients.jedis.resps.ScanResult;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RedisServiceImpl implements RedisService {
+public class RedisServiceImpl implements CacheService {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
 
+    private static final long TTL_IN_SECONDS = 1800L;
     private static final String RAW_RATES_KEY_PREFIX = "RawRates::";
     private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates::";
 
@@ -37,19 +39,35 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void saveRawRate(String platformName, String rateName, Rate rate) {
+    public void saveRawRate(String platformName, String rateName, Rate rate) {  // RawRates::TCP::USDTRY
 
         String redisKey = RAW_RATES_KEY_PREFIX + platformName + "::" + rateName;
         try (Jedis jedis = jedisPool.getResource()) {
 
             String rateInJson = objectMapper.writeValueAsString(rate);
 
-            jedis.set(redisKey,rateInJson);
+            jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
             logger.error("Error when save raw rates to the redis.",e);
         }
     }
+
+    @Override
+    public void saveCalculatedRate(String rateName, CalculatedRate rate) {
+
+        String redisKey = CALCULATED_RATES_KEY_PREFIX + "::" + rateName;
+        try(Jedis jedis = jedisPool.getResource()){
+
+            String rateInJson = objectMapper.writeValueAsString(rate);
+
+            jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
+
+        } catch (JedisConnectionException | JsonProcessingException e) {
+            logger.error("Error when save calculated rates to the redis.",e);
+        }
+    }
+
 
     @Override
     public List<Rate> getAllRawRatesByRateName(String rateName) {
