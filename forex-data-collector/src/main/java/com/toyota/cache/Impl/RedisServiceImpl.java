@@ -25,8 +25,8 @@ public class RedisServiceImpl implements CacheService {
     private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
 
     private static final long TTL_IN_SECONDS = 1800L;
-    private static final String RAW_RATES_KEY_PREFIX = "RawRates::";
-    private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates::";
+    private static final String RAW_RATES_KEY_PREFIX = "RawRates";
+    private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates";
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
@@ -41,7 +41,7 @@ public class RedisServiceImpl implements CacheService {
     @Override
     public void saveRawRate(String platformName, String rateName, Rate rate) {  // RawRates::TCP::USDTRY
 
-        String redisKey = RAW_RATES_KEY_PREFIX + platformName + "::" + rateName;
+        String redisKey = RAW_RATES_KEY_PREFIX + "::" + platformName + "::" + rateName;
         try (Jedis jedis = jedisPool.getResource()) {
 
             String rateInJson = objectMapper.writeValueAsString(rate);
@@ -113,9 +113,9 @@ public class RedisServiceImpl implements CacheService {
         int redisPort = appConfig.getIntValue("redis.port");
 
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(10);
-        poolConfig.setMaxIdle(5);
-        poolConfig.setMinIdle(2);
+        poolConfig.setMaxTotal(15);
+        poolConfig.setMaxIdle(6);
+        poolConfig.setMinIdle(4);
 
         return new JedisPool(poolConfig,redisHost,redisPort);
     }

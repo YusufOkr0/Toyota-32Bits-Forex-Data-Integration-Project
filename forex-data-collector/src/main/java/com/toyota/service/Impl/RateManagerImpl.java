@@ -6,6 +6,7 @@ import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
 import com.toyota.service.RateManager;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -53,9 +54,9 @@ public class RateManagerImpl implements RateManager {
             redisService.saveRawRate(platformName, rateName, inComingRate); // VERILER GÜNCELLENDI.
 
             if(rateName.equals("USDTRY")){
-               calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
+                calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
             }else{
-                //calculateAndSaveRateByName(rateName);
+                calculateAndSaveRatesDependentOnUsdTry(rateName);
             }
 
         } else {
@@ -70,14 +71,14 @@ public class RateManagerImpl implements RateManager {
 
         List<Rate> cachedRates = redisService.getAllRawRatesByRateName(RATE_NAME);  // tüm usd try entrylerini redisten al
 
+        if(cachedRates.isEmpty()){
+            // NO USD/TRY IN THE CACHE
+            return;
+        }
         // BID VE ASK DEGERLERINI AYIR. ( TÜM PLATFORMLARDAN VERI GELMEMIS DE OLABILIR BU DURUMDA)
         List<String> cachedUsdTryBids = cachedRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
         List<String> cachedUsdTryAsks = cachedRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
 
-        if(cachedUsdTryBids.isEmpty() || cachedUsdTryAsks.isEmpty()){
-            // NO RATE FOUND IN THE CACHE
-            return;
-        }
         CalculatedRate calculatedRate = calculationService.calculateUsdTry(
                 cachedUsdTryBids,
                 cachedUsdTryAsks
@@ -112,17 +113,28 @@ public class RateManagerImpl implements RateManager {
      * HESAPLANAN YENI BID VE ASK DEGERLERI ILE YENI BIR KUR HESAPLAYIP DÖNECEK.
      * @param updatedRateName
      */
-    private void calculateRateAndTriggerDependentRates(String updatedRateName){
+    private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName){
 
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);     // TÜM PLATFORMLARDAN USD TRY ALINDI.
+        List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);     // TÜM PLATFORMLARDAN EUR/USD VEYA GBP/USD ALINDI.
+        List<Rate> existsUsdTryRates = redisService.getAllRawRatesByRateName("USDTRY");
+
+        if(existsRates.isEmpty() || existsUsdTryRates.isEmpty()){
+            // ALL NECESSARY EXCHANGE RATES MUST BE AVAILABLE IN REDIS.
+            return;
+        }
 
         List<String> cachedBids = existsRates.stream().map(rate -> rate.getAsk().toString()).toList();
         List<String> cachedAsks = existsRates.stream().map(rate -> rate.getAsk().toString()).toList();
 
-        // redisteki bid ve ask degerlerinin ortlamasini alip bir bid ve bir ask elde edecegiz.
-        // bu da bizim calculated ratemizin degerleri olacak.
+        List<String> cachedUsdTryBids = existsUsdTryRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
+        List<String> cachedUsdTryAsks = existsUsdTryRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
 
-        CalculatedRate calculatedRate = calculationService.calculateUsdTry(cachedBids,cachedAsks);
+        BigDecimal usdTryMid = calculationService.calculateUsdTryMidValue(cachedUsdTryBids,cachedUsdTryAsks);
+        System.out.println(usdTryMid);
+
+
+
+
 
 
 

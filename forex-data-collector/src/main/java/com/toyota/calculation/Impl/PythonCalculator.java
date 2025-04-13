@@ -81,11 +81,49 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            System.out.printf("Exception. %s \n", e.getMessage());
+            System.out.printf("Exception in calculateUsdTry. %s \n", e.getMessage());
         }
 
         System.err.println("CALCULATE NULL DÖNÜYOR");
         return null;
+    }
+
+    @Override
+    public BigDecimal calculateUsdTryMidValue(List<String> cachedUsdTryBids, List<String> cachedUsdTryAsks) {
+        try {
+            Context context = contextHolder.get();
+
+            Value function = context
+                    .getBindings(LANGUAGE_NAME)
+                    .getMember("calculate_usd_try_mid_value");
+
+            Value result = function.execute(
+                    cachedUsdTryBids,
+                    cachedUsdTryAsks
+            );
+            String usd_try_mid = result.asString();
+
+            return new BigDecimal(usd_try_mid);
+
+        } catch (Exception e) {
+            System.out.printf("Exception in calculateUsdTryMidValue. %s \n", e.getMessage());
+        }
+
+        return null;
+    }
+
+
+
+
+
+    private Context createContext() {
+        Context context = Context.newBuilder("python")
+                .option("engine.WarnInterpreterOnly", "false")  // To ignore the logs
+                .allowAllAccess(true)
+                .build();
+
+        context.eval(source);
+        return context;
     }
 
     private void loadTheSourceCode() {
@@ -99,7 +137,7 @@ public class PythonCalculator implements CalculationService {
             source = Source.newBuilder(
                     LANGUAGE_NAME,
                     reader,
-                    FORMULA_FILE
+                    "python"
             ).build();
 
 
@@ -108,16 +146,6 @@ public class PythonCalculator implements CalculationService {
         }
     }
 
-
-    private Context createContext() {
-        Context context = Context.newBuilder("python")
-                .option("engine.WarnInterpreterOnly", "false")  // To ignore the logs
-                .allowAllAccess(true)
-                .build();
-
-        context.eval(source);
-        return context;
-    }
 
     public ThreadLocal<Context> getContextHolder(){
         return this.contextHolder;
