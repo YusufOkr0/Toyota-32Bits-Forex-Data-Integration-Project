@@ -20,7 +20,7 @@ public class RateManagerImpl implements RateManager {
         this.calculationService = calculationService;
     }
 
-    public void warmUpCalculationService(){
+    public void warmUpCalculationService() {
         calculationService.getContextHolder().get();
     }
 
@@ -36,6 +36,10 @@ public class RateManagerImpl implements RateManager {
 
         List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);     // TÜM PLATFORMLARDAN USD TRY ALINDI.
 
+        if (existsRates.isEmpty()) {
+            // EXCHANGE RATES MUST BE AVAILABLE IN REDIS.
+            return;
+        }
         List<String> cachedBids = existsRates
                 .stream()
                 .map(rate -> rate.getBid().toPlainString())
@@ -53,25 +57,25 @@ public class RateManagerImpl implements RateManager {
 
             redisService.saveRawRate(platformName, rateName, inComingRate); // VERILER GÜNCELLENDI.
 
-            if(rateName.equals("USDTRY")){
+            if (rateName.equals("USDTRY")) {
                 calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
-            }else{
+            } else {
                 calculateAndSaveRatesDependentOnUsdTry(rateName);
             }
 
         } else {
-            System.out.printf("RATE IS INVALID: %s\n",inComingRate);
+            System.out.printf("RATE IS INVALID: %s\n", inComingRate);
         }
 
     }
 
 
-    private void calculateAndSaveUsdTry(){
+    private void calculateAndSaveUsdTry() {
         final String RATE_NAME = "USDTRY";
 
         List<Rate> cachedRates = redisService.getAllRawRatesByRateName(RATE_NAME);  // tüm usd try entrylerini redisten al
 
-        if(cachedRates.isEmpty()){
+        if (cachedRates.isEmpty()) {
             // NO USD/TRY IN THE CACHE
             return;
         }
@@ -90,16 +94,6 @@ public class RateManagerImpl implements RateManager {
     }
 
 
-
-
-
-
-
-
-
-
-
-
     /**
      * GELEN VERI ICIN REDISTEN TÜM RATELERI AL.
      * SADECE BIR PLATFORMDA VERI VAR ISE NE OLACAK???
@@ -111,40 +105,42 @@ public class RateManagerImpl implements RateManager {
      * CALCULATION SERVISE VERIP ORTLAMALARINI ALIP
      * ( BU DURUMDA EGER TEK BIR PLATFORMDA VERI VAR ISE HESAPLAMA SONUCU DIREK O VERIYI TEKRAR BANA VERECEK.)
      * HESAPLANAN YENI BID VE ASK DEGERLERI ILE YENI BIR KUR HESAPLAYIP DÖNECEK.
+     *
      * @param updatedRateName
      */
-    private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName){
+    private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName) {
 
         List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);     // TÜM PLATFORMLARDAN EUR/USD VEYA GBP/USD ALINDI.
         List<Rate> existsUsdTryRates = redisService.getAllRawRatesByRateName("USDTRY");
 
-        if(existsRates.isEmpty() || existsUsdTryRates.isEmpty()){
+        if (existsRates.isEmpty() || existsUsdTryRates.isEmpty()) {
             // ALL NECESSARY EXCHANGE RATES MUST BE AVAILABLE IN REDIS.
             return;
         }
 
-        List<String> cachedBids = existsRates.stream().map(rate -> rate.getAsk().toString()).toList();
+        List<String> cachedBids = existsRates.stream().map(rate -> rate.getBid().toString()).toList();
         List<String> cachedAsks = existsRates.stream().map(rate -> rate.getAsk().toString()).toList();
 
         List<String> cachedUsdTryBids = existsUsdTryRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
         List<String> cachedUsdTryAsks = existsUsdTryRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
 
-        BigDecimal usdTryMid = calculationService.calculateUsdTryMidValue(cachedUsdTryBids,cachedUsdTryAsks);
-        System.out.println(usdTryMid);
+        BigDecimal usdTryMid = calculationService.calculateUsdTryMidValue(
+                cachedUsdTryBids,
+                cachedUsdTryAsks
+        );
 
+        CalculatedRate calculatedRate = calculationService.calculateRateDependentOnUsdTry(
+                updatedRateName,
+                usdTryMid.toPlainString(),
+                cachedBids,
+                cachedAsks
+        );
 
-
-
-
-
-
-
-
-
-
+        redisService.saveCalculatedRate(
+                updatedRateName,
+                calculatedRate
+        );
     }
-
-
 
 
 }

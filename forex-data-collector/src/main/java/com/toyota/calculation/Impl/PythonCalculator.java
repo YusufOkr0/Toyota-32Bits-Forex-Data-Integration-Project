@@ -47,7 +47,7 @@ public class PythonCalculator implements CalculationService {
 
 
         } catch (Exception e) {
-            System.out.printf("Exception. %s \n", e.getMessage());
+            System.err.printf("Exception. %s \n", e.getMessage());
         }
 
         return false;
@@ -81,10 +81,44 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            System.out.printf("Exception in calculateUsdTry. %s \n", e.getMessage());
+            System.err.printf("Exception in calculateUsdTry. %s \n", e.getMessage());
         }
 
         System.err.println("CALCULATE NULL DÖNÜYOR");
+        return null;
+    }
+
+    @Override
+    public CalculatedRate calculateRateDependentOnUsdTry(String rateName, String usdMid, List<String> cachedBids, List<String> cachedAsk) {
+        try {
+            Context context = contextHolder.get();
+
+            Value function = context
+                    .getBindings(LANGUAGE_NAME)
+                    .getMember("calculate_rate_dependent_on_usd_try");
+
+            Value result = function.execute(
+                    usdMid,
+                    cachedBids,
+                    cachedAsk
+            );
+
+            String rate_bid = result.getArrayElement(0).asString();
+            String rate_ask = result.getArrayElement(1).asString();
+
+            BigDecimal bid = new BigDecimal(rate_bid);
+            BigDecimal ask = new BigDecimal(rate_ask);
+
+            return new CalculatedRate(
+                    rateName,
+                    bid,
+                    ask,
+                    LocalDateTime.now()
+            );
+
+        } catch (Exception e) {
+            System.err.printf("Exception in calculateRateDependentOnUsdTry. %s \n", e.getMessage());
+        }
         return null;
     }
 
@@ -106,18 +140,14 @@ public class PythonCalculator implements CalculationService {
             return new BigDecimal(usd_try_mid);
 
         } catch (Exception e) {
-            System.out.printf("Exception in calculateUsdTryMidValue. %s \n", e.getMessage());
+            System.err.printf("Exception in calculateUsdTryMidValue. %s \n", e.getMessage());
         }
-
         return null;
     }
 
 
-
-
-
     private Context createContext() {
-        Context context = Context.newBuilder("python")
+        Context context = Context.newBuilder(LANGUAGE_NAME)
                 .option("engine.WarnInterpreterOnly", "false")  // To ignore the logs
                 .allowAllAccess(true)
                 .build();
@@ -147,7 +177,7 @@ public class PythonCalculator implements CalculationService {
     }
 
 
-    public ThreadLocal<Context> getContextHolder(){
+    public ThreadLocal<Context> getContextHolder() {
         return this.contextHolder;
     }
 

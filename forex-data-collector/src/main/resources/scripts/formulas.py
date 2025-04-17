@@ -41,10 +41,16 @@ def calculate_usd_try_mid_value(cached_usd_try_bids, cached_usd_try_asks):
     return str(usd_try_mid_dec)
 
 
+def calculate_rate_dependent_on_usd_try(usd_mid,cached_bids,cached_asks):
+    avg_of_bids_dec = calculate_average_of_bid_or_ask_list(cached_bids)
+    avg_of_asks_dec = calculate_average_of_bid_or_ask_list(cached_asks)
 
+    usd_mid_dec = Decimal(usd_mid)
 
+    calculated_bid = usd_mid_dec * avg_of_bids_dec
+    calculated_ask = usd_mid_dec * avg_of_asks_dec
 
-
+    return [str(calculated_bid),str(calculated_ask)]
 
 
 
