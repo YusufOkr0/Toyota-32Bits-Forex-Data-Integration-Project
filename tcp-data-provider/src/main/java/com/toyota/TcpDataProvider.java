@@ -98,8 +98,8 @@ public class TcpDataProvider {
                 MAXIMUM_RATE_CHANGE
         );
 
-        executorService.submit(fxDataServer::startServer);
-        executorService.submit(publisher::startBroadcast);
+        executorService.execute(fxDataServer::startServer);
+        executorService.execute(publisher::startBroadcast);
 
         logger.info("============================================================");
         logger.info("             TCP FX DATA PROVIDER - BOOTING UP              ");

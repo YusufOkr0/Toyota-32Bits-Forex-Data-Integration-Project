@@ -150,15 +150,24 @@ public class RestSubscriberImpl implements SubscriberService {
                     }
                 } else {
                     System.err.printf("Failed to fetch rate '%s' from platform '%s': HTTP status code %d%n", rateName, platformName, response.statusCode());
-                    coordinator.onDisConnect(platformName);
+                    handleConnectionFailure(platformName);
                 }
             } catch (Exception e){
                 System.err.printf("Exception when try to fetch rate: {%s}. Exception Message: {%s}.\n",rateName,e.getMessage());
+                handleConnectionFailure(platformName);
                 if(e instanceof InterruptedException){
                     Thread.currentThread().interrupt();
                 }
             }
         };
+    }
+
+    private void handleConnectionFailure(String platformName) {
+        activeSubscriptions.values()
+                .forEach(scheduledJob -> scheduledJob.cancel(false));
+        activeSubscriptions.clear();
+
+        coordinator.onDisConnect(platformName);
     }
 
 
