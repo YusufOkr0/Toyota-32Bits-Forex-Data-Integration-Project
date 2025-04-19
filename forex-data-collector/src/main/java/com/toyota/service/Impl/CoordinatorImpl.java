@@ -21,8 +21,9 @@ import java.util.concurrent.Executors;
 public class CoordinatorImpl implements CoordinatorService {
 
     private static final int THREAD_POOL_SIZE = 10;
-    private final String SUBSCRIBERS_CONFIG_FILE;
-    private final int CONNECTION_RETRY_LIMIT;
+
+    private final String subscribersConfigFile;
+    private final int connectionRetryLimit;
 
     private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
@@ -34,8 +35,8 @@ public class CoordinatorImpl implements CoordinatorService {
 
     public CoordinatorImpl(RateManager rateManager, ApplicationConfig applicationConfig) {
         this.appConfig = applicationConfig;
-        this.SUBSCRIBERS_CONFIG_FILE = appConfig.getValue("subscribers.config.file");
-        this.CONNECTION_RETRY_LIMIT = appConfig.getIntValue("connection.retry.limit");
+        this.subscribersConfigFile = appConfig.getValue("subscribers.config.file");
+        this.connectionRetryLimit = appConfig.getIntValue("connection.retry.limit");
         this.exchangeRates = appConfig.getExchangeRates();
 
         this.rateManager = rateManager;
@@ -91,9 +92,9 @@ public class CoordinatorImpl implements CoordinatorService {
     private void retryToConnectWithDelay(String platformName) {
         int retryCount = retryCounts.getOrDefault(platformName, 0);
 
-        if (retryCount >= CONNECTION_RETRY_LIMIT) {
+        if (retryCount >= connectionRetryLimit) {
             System.err.printf("Maximum retry limit (%d) reached for platform '%s'. Connection attempts abandoned.%n",
-                    CONNECTION_RETRY_LIMIT, platformName);
+                    connectionRetryLimit, platformName);
             // TODO:: ADD MAIL LOGIC.
             return;
         }
@@ -102,7 +103,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
         try {
             System.out.printf("Retrying to connect to '%s' in 10 seconds (attempt %d/%d)%n",
-                    platformName, retryCount + 1, CONNECTION_RETRY_LIMIT);
+                    platformName, retryCount + 1, connectionRetryLimit);
             Thread.sleep(10_000);
 
             subscribers.get(platformName).connect(platformName);
@@ -120,9 +121,9 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
     private void loadSubscribers() {
-        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(SUBSCRIBERS_CONFIG_FILE)) {
+        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(subscribersConfigFile)) {
             if (jsonFile == null) {
-                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", SUBSCRIBERS_CONFIG_FILE));
+                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", subscribersConfigFile));
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -130,13 +131,13 @@ public class CoordinatorImpl implements CoordinatorService {
             JsonNode subscribersNode = rootNode.get("subscribers");
 
             if (subscribersNode == null || !subscribersNode.isArray()) {
-                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", SUBSCRIBERS_CONFIG_FILE));
+                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", subscribersConfigFile));
             }
 
             subscribersNode.forEach(this::loadSubscriber);
 
         } catch (IOException e) {
-            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", SUBSCRIBERS_CONFIG_FILE, e.getMessage()));
+            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", subscribersConfigFile, e.getMessage()));
         }
     }
 
@@ -145,7 +146,7 @@ public class CoordinatorImpl implements CoordinatorService {
         String className = subscriberNode.path("className").asText(null);
 
         if (platformName == null || className == null) {
-            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", SUBSCRIBERS_CONFIG_FILE));
+            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", subscribersConfigFile));
         }
 
         try {

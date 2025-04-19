@@ -22,13 +22,13 @@ import java.util.concurrent.*;
 
 public class RestSubscriberImpl implements SubscriberService {
 
-    private final long SUBSCRIPTION_DELAY_MS;
+    private final long subscriptionDelayMs;
 
-    private String API_KEY;
+    private String apiKey;
 
-    private final String USERNAME;
-    private final String PASSWORD;
-    private final String BASE_URL;
+    private final String username;
+    private final String password;
+    private final String baseUrl;
     private final HttpClient httpClient;
 
     private final Set<String> receivedRates;
@@ -42,10 +42,10 @@ public class RestSubscriberImpl implements SubscriberService {
     public RestSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
         this.coordinator = coordinator;
 
-        this.USERNAME = applicationConfig.getValue("rest.platform.username");
-        this.PASSWORD = applicationConfig.getValue("rest.platform.password");
-        this.BASE_URL = applicationConfig.getValue("rest.platform.base.url");
-        this.SUBSCRIPTION_DELAY_MS = applicationConfig.getIntValue("subscription.delay.ms");
+        this.username = applicationConfig.getValue("rest.platform.username");
+        this.password = applicationConfig.getValue("rest.platform.password");
+        this.baseUrl = applicationConfig.getValue("rest.platform.base.url");
+        this.subscriptionDelayMs = applicationConfig.getIntValue("subscription.delay.ms");
 
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
@@ -65,7 +65,7 @@ public class RestSubscriberImpl implements SubscriberService {
                     .send(authRequest, HttpResponse.BodyHandlers.ofString());
 
             if (authResponse.statusCode() == 200) {
-                this.API_KEY = objectMapper.readValue(
+                this.apiKey = objectMapper.readValue(
                         authResponse.body(),
                         ApiKeyResponse.class
                 ).getApiKey();
@@ -89,20 +89,20 @@ public class RestSubscriberImpl implements SubscriberService {
                 .forEach(scheduledJob -> scheduledJob.cancel(false));
         activeSubscriptions.clear();
         this.receivedRates.clear();
-        this.API_KEY = null;
+        this.apiKey = null;
     }
 
     @Override
     public void subscribe(String platformName, String rateName) {
-        if (API_KEY == null || activeSubscriptions.containsKey(rateName)) {
+        if (apiKey == null || activeSubscriptions.containsKey(rateName)) {
             return;
         }
 
-        String rateUrl = String.format("%s/api/rates/%s_%s", BASE_URL, platformName, rateName); //localhost:8092/api/rates/REST_USDTRY
+        String rateUrl = String.format("%s/api/rates/%s_%s", baseUrl, platformName, rateName); //localhost:8092/api/rates/REST_USDTRY
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(rateUrl))
-                .header("Authorization", "Bearer " + API_KEY)
+                .header("Authorization", "Bearer " + apiKey)
                 .GET()
                 .build();
 
@@ -116,7 +116,7 @@ public class RestSubscriberImpl implements SubscriberService {
         ScheduledFuture<?> scheduledJob = scheduler.scheduleWithFixedDelay(
                 subscribeJob,
                 1,
-                SUBSCRIPTION_DELAY_MS,
+                subscriptionDelayMs,
                 TimeUnit.MILLISECONDS
         );
         activeSubscriptions.put(rateName, scheduledJob);
@@ -177,9 +177,9 @@ public class RestSubscriberImpl implements SubscriberService {
                     "username": "%s",
                     "password": "%s"
                 }
-                """.formatted(USERNAME, PASSWORD);
+                """.formatted(username, password);
         return HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/auth/login"))
+                .uri(URI.create(baseUrl + "/auth/login"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();

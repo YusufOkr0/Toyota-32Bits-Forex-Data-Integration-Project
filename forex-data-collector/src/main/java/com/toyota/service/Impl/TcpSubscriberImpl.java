@@ -21,11 +21,11 @@ import java.util.concurrent.Executors;
 
 public class TcpSubscriberImpl implements SubscriberService {
 
-    private final int SERVER_PORT;
-    private final String SERVER_HOST;
+    private final int serverPort;
+    private final String serverHost;
 
-    private final String USERNAME;
-    private final String PASSWORD;
+    private final String username;
+    private final String password;
 
     private Socket socket;
     private BufferedReader reader;
@@ -39,21 +39,21 @@ public class TcpSubscriberImpl implements SubscriberService {
         this.executorService = Executors.newFixedThreadPool(2);
 
 
-        this.SERVER_HOST = applicationConfig.getValue("tcp.platform.host");
-        this.SERVER_PORT = applicationConfig.getIntValue("tcp.platform.port");
-        this.USERNAME = applicationConfig.getValue("tcp.platform.username");
-        this.PASSWORD = applicationConfig.getValue("tcp.platform.password");
+        this.serverHost = applicationConfig.getValue("tcp.platform.host");
+        this.serverPort = applicationConfig.getIntValue("tcp.platform.port");
+        this.username = applicationConfig.getValue("tcp.platform.username");
+        this.password = applicationConfig.getValue("tcp.platform.password");
     }
 
     @Override
     public void connect(String platformName) {
         try {
-            socket = new Socket(SERVER_HOST, SERVER_PORT);
+            socket = new Socket(serverHost, serverPort);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             writer = new PrintWriter(socket.getOutputStream(), true);
 
 
-            sendMessageToServer(String.format("connect|%s|%s", USERNAME, PASSWORD));
+            sendMessageToServer(String.format("connect|%s|%s", username, password));
 
             String serverMessage = reader.readLine();
 
@@ -84,7 +84,7 @@ public class TcpSubscriberImpl implements SubscriberService {
 
     @Override
     public void disConnect() {
-        sendMessageToServer(String.format("disconnect|%s|%s", USERNAME, PASSWORD));
+        sendMessageToServer(String.format("disconnect|%s|%s", username, password));
         closeResources();
     }
 
