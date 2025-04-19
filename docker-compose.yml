@@ -22,4 +22,4 @@ services:
       - TCP_GBPUSD_MAX_LIMIT=1.42142
       - PUBLISH_FREQUENCY=10000
       - USER_CREDENTIALS=user|pass,admin|admin
-      - SPIKE_INTERVAL=5
+      - SPIKE_INTERVAL=10

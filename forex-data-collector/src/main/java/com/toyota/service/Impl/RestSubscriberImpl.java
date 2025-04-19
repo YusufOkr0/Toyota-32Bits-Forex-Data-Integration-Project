@@ -1,10 +1,9 @@
 package com.toyota.service.Impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.toyota.config.ConfigUtil;
+import com.toyota.config.ApplicationConfig;
 import com.toyota.dtos.response.ApiKeyResponse;
 import com.toyota.entity.Rate;
 import com.toyota.service.CoordinatorService;
@@ -23,7 +22,7 @@ import java.util.concurrent.*;
 
 public class RestSubscriberImpl implements SubscriberService {
 
-    private static final long SUBSCRIPTION_DELAY_MS = 500;
+    private final long SUBSCRIPTION_DELAY_MS;
 
     private String API_KEY;
 
@@ -33,19 +32,20 @@ public class RestSubscriberImpl implements SubscriberService {
     private final HttpClient httpClient;
 
     private final Set<String> receivedRates;
-    private final ScheduledExecutorService scheduler;
-    private final Map<String, ScheduledFuture<?>> activeSubscriptions;
     private final ObjectMapper objectMapper;
 
+    private final Map<String, ScheduledFuture<?>> activeSubscriptions;
+    private final ScheduledExecutorService scheduler;
     private final CoordinatorService coordinator;
 
 
-    public RestSubscriberImpl(CoordinatorService coordinator) {
+    public RestSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
         this.coordinator = coordinator;
 
-        this.BASE_URL = ConfigUtil.getValue("rest.platform.base.url");
-        this.USERNAME = ConfigUtil.getValue("rest.platform.username");
-        this.PASSWORD = ConfigUtil.getValue("rest.platform.password");
+        this.USERNAME = applicationConfig.getValue("rest.platform.username");
+        this.PASSWORD = applicationConfig.getValue("rest.platform.password");
+        this.BASE_URL = applicationConfig.getValue("rest.platform.base.url");
+        this.SUBSCRIPTION_DELAY_MS = applicationConfig.getIntValue("subscription.delay.ms");
 
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
@@ -106,6 +106,7 @@ public class RestSubscriberImpl implements SubscriberService {
                 .GET()
                 .build();
 
+
         Runnable subscribeJob = createSubscribeJob(
                 platformName,
                 rateName,
@@ -149,14 +150,24 @@ public class RestSubscriberImpl implements SubscriberService {
                     }
                 } else {
                     System.err.printf("Failed to fetch rate '%s' from platform '%s': HTTP status code %d%n", rateName, platformName, response.statusCode());
+                    handleConnectionFailure(platformName);
                 }
             } catch (Exception e){
                 System.err.printf("Exception when try to fetch rate: {%s}. Exception Message: {%s}.\n",rateName,e.getMessage());
+                handleConnectionFailure(platformName);
                 if(e instanceof InterruptedException){
                     Thread.currentThread().interrupt();
                 }
             }
         };
+    }
+
+    private void handleConnectionFailure(String platformName) {
+        activeSubscriptions.values()
+                .forEach(scheduledJob -> scheduledJob.cancel(false));
+        activeSubscriptions.clear();
+
+        coordinator.onDisConnect(platformName);
     }
 
 

@@ -1,7 +1,7 @@
 package com.toyota.service.Impl;
 
 import com.toyota.service.CoordinatorService;
-import com.toyota.config.ConfigUtil;
+import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.Rate;
 import com.toyota.service.SubscriberService;
 
@@ -34,15 +34,15 @@ public class TcpSubscriberImpl implements SubscriberService {
     private final CoordinatorService coordinator;
     private final ExecutorService executorService;
 
-    public TcpSubscriberImpl(CoordinatorService coordinator) {
+    public TcpSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
         this.coordinator = coordinator;
         this.executorService = Executors.newFixedThreadPool(2);
 
 
-        this.SERVER_HOST = ConfigUtil.getValue("tcp.platform.host");
-        this.SERVER_PORT = ConfigUtil.getIntValue("tcp.platform.port");
-        this.USERNAME = ConfigUtil.getValue("tcp.platform.username");
-        this.PASSWORD = ConfigUtil.getValue("tcp.platform.password");
+        this.SERVER_HOST = applicationConfig.getValue("tcp.platform.host");
+        this.SERVER_PORT = applicationConfig.getIntValue("tcp.platform.port");
+        this.USERNAME = applicationConfig.getValue("tcp.platform.username");
+        this.PASSWORD = applicationConfig.getValue("tcp.platform.password");
     }
 
     @Override
@@ -52,17 +52,27 @@ public class TcpSubscriberImpl implements SubscriberService {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             writer = new PrintWriter(socket.getOutputStream(), true);
 
+
             sendMessageToServer(String.format("connect|%s|%s", USERNAME, PASSWORD));
 
             String serverMessage = reader.readLine();
 
-            if (serverMessage.startsWith("ERROR")) {
+            if (serverMessage == null) {
+                System.err.printf("Connection attempt to %s failed: Server closed connection without response.%n", platformName);
+                closeResources();
+                coordinator.onConnect(platformName, false);
+            } else if (serverMessage.startsWith("ERROR")) {
+                System.err.printf("Connection attempt to %s failed: Server returned error: %s%n", platformName, serverMessage);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("SUCCESS")) {
-                System.out.println("Bağlantı başarılı.");
-                executorService.submit(() -> listenToIncomingRates(platformName));
+                System.out.printf("Connection to %s successful.%n", platformName);
+                executorService.execute(() -> listenToIncomingRates(platformName));
                 coordinator.onConnect(platformName, true);
+            } else {
+                System.err.printf("Connection attempt to %s failed: Unexpected server response: %s%n", platformName, serverMessage);
+                closeResources();
+                coordinator.onConnect(platformName, false); // Bağlantı başarısız
             }
 
         } catch (IOException e) {
@@ -89,13 +99,12 @@ public class TcpSubscriberImpl implements SubscriberService {
     }
 
     private void listenToIncomingRates(String platformName) {
-        try {
-            Set<String> receivedRates = new HashSet<>();
+        Set<String> receivedRates = new HashSet<>();
 
+        try {
             String serverMessage;
             while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
                 if (serverMessage.startsWith("TCP_")) {
-
                     String rateName = serverMessage.substring(4, 10);
                     Rate rate = convertMessageToRate(serverMessage);
 
@@ -105,12 +114,16 @@ public class TcpSubscriberImpl implements SubscriberService {
                         receivedRates.add(rateName);
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
+
                 }
+
             }
         } catch (IOException e) {
             System.err.println("Sunucu dinleme hatası: " + e.getMessage());
+        } finally {
             closeResources();
-            coordinator.onDisConnect(platformName, true);
+            System.out.println("Stopped listening to the server.");
+            coordinator.onDisConnect(platformName);
         }
     }
 
@@ -139,9 +152,12 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (reader != null) reader.close();
             if (writer != null) writer.close();
             if (socket != null) socket.close();
-            if (!executorService.isShutdown()) executorService.shutdown();
         } catch (IOException e) {
             System.err.println("Bağlantıyı kapatma hatası: " + e.getMessage());
+        } finally {
+            socket = null;
+            reader = null;
+            writer = null;
         }
     }
 }
