@@ -4,6 +4,8 @@ import com.toyota.cache.CacheService;
 import com.toyota.calculation.CalculationService;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
+import com.toyota.publisher.Impl.KafkaServiceImpl;
+import com.toyota.publisher.KafkaService;
 import com.toyota.service.RateManager;
 
 import java.math.BigDecimal;
@@ -12,10 +14,12 @@ import java.util.List;
 
 public class RateManagerImpl implements RateManager {
 
+    private final KafkaService kafkaService;
     private final CacheService redisService;
     private final CalculationService calculationService;
 
-    public RateManagerImpl(CacheService redisService, CalculationService calculationService) {
+    public RateManagerImpl(KafkaService kafkaService, CacheService redisService, CalculationService calculationService) {
+        this.kafkaService = kafkaService;
         this.redisService = redisService;
         this.calculationService = calculationService;
     }
@@ -30,6 +34,7 @@ public class RateManagerImpl implements RateManager {
                 rateName,
                 inComingRate
         );
+        kafkaService.sendRawRate(inComingRate);
     }
 
     public void handleRateUpdate(String platformName, String rateName, Rate inComingRate) {
@@ -56,6 +61,7 @@ public class RateManagerImpl implements RateManager {
         if (calculationService.isInComingRateValid(newBid, newAsk, cachedBids, cachedAsks)) {
 
             redisService.saveRawRate(platformName, rateName, inComingRate); // VERILER GÜNCELLENDI.
+            kafkaService.sendRawRate(inComingRate);
 
             if (rateName.equals("USDTRY")) {
                 calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
@@ -73,13 +79,13 @@ public class RateManagerImpl implements RateManager {
     private void calculateAndSaveUsdTry() {
         final String RATE_NAME = "USDTRY";
 
-        List<Rate> cachedRates = redisService.getAllRawRatesByRateName(RATE_NAME);  // tüm usd try entrylerini redisten al
+        List<Rate> cachedRates = redisService.getAllRawRatesByRateName(RATE_NAME);
 
         if (cachedRates.isEmpty()) {
             // NO USD/TRY IN THE CACHE
             return;
         }
-        // BID VE ASK DEGERLERINI AYIR. ( TÜM PLATFORMLARDAN VERI GELMEMIS DE OLABILIR BU DURUMDA)
+
         List<String> cachedUsdTryBids = cachedRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
         List<String> cachedUsdTryAsks = cachedRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
 
@@ -91,26 +97,14 @@ public class RateManagerImpl implements RateManager {
                 RATE_NAME,
                 calculatedRate
         );
+        kafkaService.sendCalculatedRate(calculatedRate);
     }
 
 
-    /**
-     * GELEN VERI ICIN REDISTEN TÜM RATELERI AL.
-     * SADECE BIR PLATFORMDA VERI VAR ISE NE OLACAK???
-     * SADECE RESTDEN GELDI DIYELIM.
-     * REDISTEN PLATFORM BAZINDA KAC TANE VERI ALDIGIM FARKETMEKSIZIN ALDIGIM TÜM VERILERIN BID VE ASK DEGERLERINI AYIRIYORUM.
-     * EGER TEK BI PLATFORMDAN VERI GELMIS ISE SADECE BUNUN BID VE ASK DEGERLERI ELIMDE OLUYOR.
-     * BID VE ASKLERIN AYRI AYRI ORTALAMALARINI ALIP BUNU CALCULATED__[RATENAME] OLARAK ALMALIYIM.
-     * YANI REDISTE TEK BIR PLATFROMDAN VERI GELMIS OLSA BILE ELIMDE OLAN BID VE ASK DEGERLERINI AYRI LISTELER SEKLINDE
-     * CALCULATION SERVISE VERIP ORTLAMALARINI ALIP
-     * ( BU DURUMDA EGER TEK BIR PLATFORMDA VERI VAR ISE HESAPLAMA SONUCU DIREK O VERIYI TEKRAR BANA VERECEK.)
-     * HESAPLANAN YENI BID VE ASK DEGERLERI ILE YENI BIR KUR HESAPLAYIP DÖNECEK.
-     *
-     * @param updatedRateName
-     */
+
     private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName) {
 
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);     // TÜM PLATFORMLARDAN EUR/USD VEYA GBP/USD ALINDI.
+        List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);
         List<Rate> existsUsdTryRates = redisService.getAllRawRatesByRateName("USDTRY");
 
         if (existsRates.isEmpty() || existsUsdTryRates.isEmpty()) {
@@ -140,6 +134,7 @@ public class RateManagerImpl implements RateManager {
                 updatedRateName,
                 calculatedRate
         );
+        kafkaService.sendCalculatedRate(calculatedRate);
     }
 
 

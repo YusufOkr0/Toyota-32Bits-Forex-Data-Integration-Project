@@ -8,6 +8,8 @@ import com.toyota.entity.Rate;
 import com.toyota.exception.*;
 import com.toyota.service.RateManager;
 import com.toyota.service.SubscriberService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,13 +18,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class CoordinatorImpl implements CoordinatorService {
 
+    private static final Logger log = LoggerFactory.getLogger(CoordinatorImpl.class);
     private static final int THREAD_POOL_SIZE = 10;
-    private final String SUBSCRIBERS_CONFIG_FILE;
-    private final int CONNECTION_RETRY_LIMIT;
+
+    private final String subscribersConfigFile;
+    private final int connectionRetryLimit;
+    private final int retryDelaySeconds;
 
     private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
@@ -33,9 +39,11 @@ public class CoordinatorImpl implements CoordinatorService {
     private final Map<String, SubscriberService> subscribers;
 
     public CoordinatorImpl(RateManager rateManager, ApplicationConfig applicationConfig) {
+        log.info("Coordinator::Initializing Coordinator...");
         this.appConfig = applicationConfig;
-        this.SUBSCRIBERS_CONFIG_FILE = appConfig.getValue("subscribers.config.file");
-        this.CONNECTION_RETRY_LIMIT = appConfig.getIntValue("connection.retry.limit");
+        this.subscribersConfigFile = appConfig.getValue("subscribers.config.file");
+        this.connectionRetryLimit = appConfig.getIntValue("connection.retry.limit");
+        this.retryDelaySeconds = appConfig.getIntValue("retry.delay.seconds");
         this.exchangeRates = appConfig.getExchangeRates();
 
         this.rateManager = rateManager;
@@ -46,24 +54,33 @@ public class CoordinatorImpl implements CoordinatorService {
 
 
         // create the context for per thread.
-        for(int i = 1; i <= THREAD_POOL_SIZE; i++){
+        log.info("Coordinator::Warming up calculation service with {} threads...", THREAD_POOL_SIZE);
+        for (int i = 1; i <= THREAD_POOL_SIZE; i++) {
             executorService.execute(rateManager::warmUpCalculationService);
         }
+
         loadSubscribers();
         startSubscribers();
+        log.info("Coordinator::Simulation begins. Active subscriber count :{}.", subscribers.size());
     }
 
 
     @Override
     public void onConnect(String platformName, Boolean status) {
         executorService.execute(() -> {
-            System.out.printf("Platform: %s connection status is: %s\n", platformName, status);
+            log.info("Coordinator::Platform '{}' connection status: {}", platformName, status ? "CONNECTED" : "FAILED");
             if (status) {
+
                 retryCounts.put(platformName, 0);
                 SubscriberService subscriber = subscribers.get(platformName);
-                exchangeRates.forEach(rate -> {
-                    subscriber.subscribe(platformName, rate);
-                });
+
+                if (subscriber != null) {
+                    exchangeRates.forEach(rate -> {
+                        subscriber.subscribe(platformName, rate);
+                        log.debug("Coordinator::Subscription request sent for platform '{}', rate '{}'", platformName, rate);
+                    });
+                }
+
             } else {
                 retryToConnectWithDelay(platformName);
             }
@@ -73,27 +90,39 @@ public class CoordinatorImpl implements CoordinatorService {
     @Override
     public void onDisConnect(String platformName) {
         executorService.execute(() -> {
+            log.error("Coordinator::Platform '{}' disconnected. Initiating reconnection process.", platformName);
             retryToConnectWithDelay(platformName);
         });
     }
 
     @Override
     public void onRateAvailable(String platformName, String rateName, Rate rate) {
-        executorService.execute(() -> rateManager.handleFirstInComingRate(platformName, rateName, rate));
+        executorService.execute(() -> {
+            log.info("Coordinator::Rate {} is available for platform '{}'. Forwarding to RateManager.", rateName, platformName);
+            rateManager.handleFirstInComingRate(platformName, rateName, rate);
+        });
     }
 
     @Override
     public void onRateUpdate(String platformName, String rateName, Rate rate) {
-        executorService.execute(() -> rateManager.handleRateUpdate(platformName, rateName, rate));
+        executorService.execute(() -> {
+            log.debug("Coordinator::Rate update for platform '{}', rate '{}'. Forwarding to RateManager.", platformName, rateName);
+            rateManager.handleRateUpdate(platformName, rateName, rate);
+        });
     }
+
+
+
+
+
 
 
     private void retryToConnectWithDelay(String platformName) {
         int retryCount = retryCounts.getOrDefault(platformName, 0);
 
-        if (retryCount >= CONNECTION_RETRY_LIMIT) {
-            System.err.printf("Maximum retry limit (%d) reached for platform '%s'. Connection attempts abandoned.%n",
-                    CONNECTION_RETRY_LIMIT, platformName);
+        if (retryCount >= connectionRetryLimit) {
+            log.error("Coordinator::Maximum retry limit ({}) reached for platform '{}'. Connection attempts abandoned.",
+                    connectionRetryLimit, platformName);
             // TODO:: ADD MAIL LOGIC.
             return;
         }
@@ -101,28 +130,35 @@ public class CoordinatorImpl implements CoordinatorService {
         retryCounts.put(platformName, retryCount + 1);
 
         try {
-            System.out.printf("Retrying to connect to '%s' in 10 seconds (attempt %d/%d)%n",
-                    platformName, retryCount + 1, CONNECTION_RETRY_LIMIT);
-            Thread.sleep(10_000);
+            log.warn("Coordinator::Retrying connection to '{}' in {} seconds.", platformName, retryDelaySeconds);
 
-            subscribers.get(platformName).connect(platformName);
-
+            Thread.sleep(TimeUnit.SECONDS.toMillis(retryDelaySeconds));
+            SubscriberService subscriber = subscribers.get(platformName);
+            if (subscriber != null) {
+                log.warn("Coordinator::Executing connection retry attempt {} for platform '{}'. (attempt {}/{})...", retryCount + 1, platformName, retryCount + 1, connectionRetryLimit);
+                subscriber.connect(platformName);
+            }
         } catch (InterruptedException e) {
-            System.err.printf("Reconnect interrupted for '%s': %s%n", platformName, e.getMessage());
+            log.error("Coordinator::Reconnection attempt for '{}' was interrupted.", platformName, e);
             Thread.currentThread().interrupt();
         }
     }
 
+
+
     private void startSubscribers() {
+        log.info("Coordinator::Starting all loaded subscribers...");
         subscribers.forEach((platformName, subscriber) -> {
             executorService.execute(() -> subscriber.connect(platformName));
         });
     }
 
     private void loadSubscribers() {
-        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(SUBSCRIBERS_CONFIG_FILE)) {
+        log.debug("Coordinator::Loading subscriber configurations from '{}'...", subscribersConfigFile);
+        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(subscribersConfigFile)) {
             if (jsonFile == null) {
-                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", SUBSCRIBERS_CONFIG_FILE));
+                log.error("Coordinator::Subscriber configuration file '{}' not found in classpath.", subscribersConfigFile);
+                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", subscribersConfigFile));
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -130,13 +166,15 @@ public class CoordinatorImpl implements CoordinatorService {
             JsonNode subscribersNode = rootNode.get("subscribers");
 
             if (subscribersNode == null || !subscribersNode.isArray()) {
-                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", SUBSCRIBERS_CONFIG_FILE));
+                log.error("Coordinator::Invalid configuration in '{}': 'subscribers' field must be a non-null JSON array.", subscribersConfigFile);
+                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", subscribersConfigFile));
             }
 
             subscribersNode.forEach(this::loadSubscriber);
-
+            log.info("Coordinator::Subscribers loaded successfully from configuration file: '{}'.", subscribersConfigFile);
         } catch (IOException e) {
-            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", SUBSCRIBERS_CONFIG_FILE, e.getMessage()));
+            log.error("Coordinator::Failed to read subscriber configuration file '{}'", subscribersConfigFile, e);
+            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", subscribersConfigFile, e.getMessage()));
         }
     }
 
@@ -144,13 +182,16 @@ public class CoordinatorImpl implements CoordinatorService {
         String platformName = subscriberNode.path("platformName").asText(null);
         String className = subscriberNode.path("className").asText(null);
 
+        log.debug("Coordinator::loading subscriber for platform : {}", subscriberNode.toString());
         if (platformName == null || className == null) {
-            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", SUBSCRIBERS_CONFIG_FILE));
+            log.error("Coordinator::Invalid subscriber entry in config file '{}': 'platformName' ({}) or 'className' ({}) is missing.", subscribersConfigFile, platformName, className);
+            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", subscribersConfigFile));
         }
 
         try {
             Class<?> clazz = Class.forName(className);
             if (!SubscriberService.class.isAssignableFrom(clazz)) {
+                log.error("Coordinator::Class '{}' for platform '{}' does not implement SubscriberService.", className, platformName);
                 throw new InvalidSubscriberClassException(String.format("Class '%s' is not a valid implementation of SubscriberService.", className));
             }
 
@@ -159,10 +200,12 @@ public class CoordinatorImpl implements CoordinatorService {
                     .newInstance(this, this.appConfig);
 
             subscribers.put(platformName, subscriber);
-
+            log.debug("Coordinator::Successfully loaded and instantiated subscriber for platform '{}'.", platformName);
         } catch (ClassNotFoundException e) {
+            log.error("Subscriber class '{}' for platform '{}' not found in classpath.", className, platformName, e);
             throw new ClassLoadingException(String.format("Class '%s' not found in the classpath.", className));
         } catch (Exception e) {
+            log.error("Failed to instantiate subscriber class '{}' for platform '{}'.", className, platformName, e);
             throw new ClassLoadingException(String.format("Unexpected error while loading subscriber class '%s': %s", className, e.getMessage()), e);
         }
     }
