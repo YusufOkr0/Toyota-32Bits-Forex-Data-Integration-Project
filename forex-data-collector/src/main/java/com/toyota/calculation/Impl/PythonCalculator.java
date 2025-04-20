@@ -148,10 +148,9 @@ public class PythonCalculator implements CalculationService {
 
     private Context createContext() {
         Context context = Context.newBuilder(LANGUAGE_NAME)
-                .option("engine.WarnInterpreterOnly", "false")  // To ignore the logs
+                .option("engine.WarnInterpreterOnly", "false")
                 .allowAllAccess(true)
                 .build();
-
         context.eval(source);
         return context;
     }

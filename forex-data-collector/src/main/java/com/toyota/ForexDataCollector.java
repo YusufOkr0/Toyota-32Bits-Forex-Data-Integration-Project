@@ -5,6 +5,8 @@ import com.toyota.cache.Impl.RedisServiceImpl;
 import com.toyota.calculation.CalculationService;
 import com.toyota.calculation.Impl.PythonCalculator;
 import com.toyota.config.ApplicationConfig;
+import com.toyota.publisher.Impl.KafkaServiceImpl;
+import com.toyota.publisher.KafkaService;
 import com.toyota.service.CoordinatorService;
 import com.toyota.service.Impl.CoordinatorImpl;
 import com.toyota.service.Impl.RateManagerImpl;
@@ -18,7 +20,8 @@ public class ForexDataCollector {
         CacheService redisService = new RedisServiceImpl(appConfig);
         CalculationService calculationService = new PythonCalculator();
 
-        RateManager rateManager = new RateManagerImpl(redisService,calculationService);
+        KafkaService kafkaService = new KafkaServiceImpl(appConfig);
+        RateManager rateManager = new RateManagerImpl(kafkaService, redisService, calculationService);
 
         CoordinatorService coordinatorService = new CoordinatorImpl(rateManager,appConfig);
 

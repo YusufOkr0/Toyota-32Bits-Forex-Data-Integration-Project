@@ -65,6 +65,7 @@ public class KafkaServiceImpl implements KafkaService {
         kafkaConfigs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers);
         kafkaConfigs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         kafkaConfigs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CustomJsonSerializer.class.getName());
+        kafkaConfigs.put("max.block.ms", "5000");
 
         rawRateProducer = new KafkaProducer<>(kafkaConfigs);
         calculatedRateProducer = new KafkaProducer<>(kafkaConfigs);

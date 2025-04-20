@@ -16,7 +16,7 @@
         <jackson-version>2.18.2</jackson-version>
         <redis-version>5.2.0</redis-version>
         <kafka-version>3.8.0</kafka-version>
-        <slf4j.version>2.0.16</slf4j.version>
+        <log4j2.version>2.24.3</log4j2.version>
         <graalvm.polyglot.version>24.1.1</graalvm.polyglot.version>
     </properties>
 
@@ -46,17 +46,12 @@
             <version>${kafka-version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>

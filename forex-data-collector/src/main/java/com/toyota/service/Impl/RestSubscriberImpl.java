@@ -8,6 +8,8 @@ import com.toyota.dtos.response.ApiKeyResponse;
 import com.toyota.entity.Rate;
 import com.toyota.service.CoordinatorService;
 import com.toyota.service.SubscriberService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.io.IOException;
@@ -21,6 +23,8 @@ import java.util.Set;
 import java.util.concurrent.*;
 
 public class RestSubscriberImpl implements SubscriberService {
+
+    private static final Logger log = LoggerFactory.getLogger(RestSubscriberImpl.class);
 
     private final long subscriptionDelayMs;
 
@@ -57,7 +61,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
     @Override
     public void connect(String platformName) {
-
+        log.debug("Rest Subscriber::Attempting to connect to platform: {}", platformName);
         try {
             HttpRequest authRequest = buildAuthRequest();
 
@@ -69,18 +73,17 @@ public class RestSubscriberImpl implements SubscriberService {
                         authResponse.body(),
                         ApiKeyResponse.class
                 ).getApiKey();
+                log.info("Rest Subscriber::Successfully connected to platform: {}. API Key received.", platformName);
                 coordinator.onConnect(platformName, true);
             } else {
-                System.out.println("Authentication failed with status: " +
-                        authResponse.statusCode());
+                log.warn("Authentication failed for platform: {}. HTTP status: {}", platformName, authResponse.statusCode());
                 coordinator.onConnect(platformName, false);
             }
 
         } catch (IOException | InterruptedException e) {
-            System.err.printf("Failed to connect to Rest Platform. Message: %s", e.getMessage());
+            log.warn("Failed to connect to platform: {}.", platformName, e);
             coordinator.onConnect(platformName, false);
         }
-
     }
 
     @Override
@@ -90,11 +93,17 @@ public class RestSubscriberImpl implements SubscriberService {
         activeSubscriptions.clear();
         this.receivedRates.clear();
         this.apiKey = null;
+        log.info("Rest Subscriber::Disconnected successfully. All subscriptions cleared.");
     }
 
     @Override
     public void subscribe(String platformName, String rateName) {
-        if (apiKey == null || activeSubscriptions.containsKey(rateName)) {
+        if (apiKey == null) {
+            log.warn("Rest Subscriber::Cannot subscribe to rate: {}. API key is null.", rateName);
+            return;
+        }
+        if (activeSubscriptions.containsKey(rateName)) {
+            log.warn("Rest Subscriber::Subscription to rate: {} already exists.", rateName);
             return;
         }
 
@@ -120,6 +129,7 @@ public class RestSubscriberImpl implements SubscriberService {
                 TimeUnit.MILLISECONDS
         );
         activeSubscriptions.put(rateName, scheduledJob);
+        log.info("Rest Subscriber::Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
@@ -128,6 +138,9 @@ public class RestSubscriberImpl implements SubscriberService {
         if (scheduledJob != null) {
             scheduledJob.cancel(false);
             receivedRates.remove(rateName);
+            log.info("Rest Subscriber::Unsubscribed from rate: {} on platform: {}", rateName, platformName);
+        }else {
+            log.warn("Rest Subscriber::No subscription found for rate: {} on platform: {}", rateName, platformName);
         }
     }
 
@@ -135,6 +148,7 @@ public class RestSubscriberImpl implements SubscriberService {
     private Runnable createSubscribeJob(String platformName, String rateName, HttpRequest request) {
         return () -> {
             try {
+                log.trace("Rest Subscriber::Fetching rate: {} for platform: {}", rateName, platformName);
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() == 200) {
                     Rate rate = objectMapper.readValue(
@@ -149,24 +163,26 @@ public class RestSubscriberImpl implements SubscriberService {
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
                 } else {
-                    System.err.printf("Failed to fetch rate '%s' from platform '%s': HTTP status code %d%n", rateName, platformName, response.statusCode());
+                    log.warn("Rest Subscriber::Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
                     handleConnectionFailure(platformName);
                 }
             } catch (Exception e){
-                System.err.printf("Exception when try to fetch rate: {%s}. Exception Message: {%s}.\n",rateName,e.getMessage());
+                log.error("Rest Subscriber::Error fetching rate: {} from platform: {}. Error: {}", rateName, platformName, e.getMessage(), e);
                 handleConnectionFailure(platformName);
                 if(e instanceof InterruptedException){
                     Thread.currentThread().interrupt();
+                    log.error("Rest Subscriber::Thread is interrupted.");
                 }
             }
         };
     }
 
     private void handleConnectionFailure(String platformName) {
+        log.warn("Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
         activeSubscriptions.values()
                 .forEach(scheduledJob -> scheduledJob.cancel(false));
         activeSubscriptions.clear();
-
+        receivedRates.clear();
         coordinator.onDisConnect(platformName);
     }
 

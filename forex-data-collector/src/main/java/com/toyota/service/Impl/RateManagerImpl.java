@@ -4,6 +4,7 @@ import com.toyota.cache.CacheService;
 import com.toyota.calculation.CalculationService;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
+import com.toyota.publisher.Impl.KafkaServiceImpl;
 import com.toyota.publisher.KafkaService;
 import com.toyota.service.RateManager;
 
@@ -13,10 +14,12 @@ import java.util.List;
 
 public class RateManagerImpl implements RateManager {
 
+    private final KafkaService kafkaService;
     private final CacheService redisService;
     private final CalculationService calculationService;
 
-    public RateManagerImpl(CacheService redisService, CalculationService calculationService) {
+    public RateManagerImpl(KafkaService kafkaService, CacheService redisService, CalculationService calculationService) {
+        this.kafkaService = kafkaService;
         this.redisService = redisService;
         this.calculationService = calculationService;
     }
@@ -31,6 +34,7 @@ public class RateManagerImpl implements RateManager {
                 rateName,
                 inComingRate
         );
+        kafkaService.sendRawRate(inComingRate);
     }
 
     public void handleRateUpdate(String platformName, String rateName, Rate inComingRate) {
@@ -57,6 +61,7 @@ public class RateManagerImpl implements RateManager {
         if (calculationService.isInComingRateValid(newBid, newAsk, cachedBids, cachedAsks)) {
 
             redisService.saveRawRate(platformName, rateName, inComingRate); // VERILER GÜNCELLENDI.
+            kafkaService.sendRawRate(inComingRate);
 
             if (rateName.equals("USDTRY")) {
                 calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
@@ -92,6 +97,7 @@ public class RateManagerImpl implements RateManager {
                 RATE_NAME,
                 calculatedRate
         );
+        kafkaService.sendCalculatedRate(calculatedRate);
     }
 
 
@@ -128,6 +134,7 @@ public class RateManagerImpl implements RateManager {
                 updatedRateName,
                 calculatedRate
         );
+        kafkaService.sendCalculatedRate(calculatedRate);
     }
 
 
