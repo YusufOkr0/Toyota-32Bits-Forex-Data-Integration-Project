@@ -6,6 +6,7 @@ import com.toyota.config.ApplicationConfig;
 import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
 import com.toyota.exception.*;
+import com.toyota.service.MailSender;
 import com.toyota.service.RateManager;
 import com.toyota.service.SubscriberService;
 import org.slf4j.Logger;
@@ -34,19 +35,22 @@ public class CoordinatorImpl implements CoordinatorService {
     private final Map<String, Integer> retryCounts;
 
     private final RateManager rateManager;
+    private final MailSender mailSender;
     private final ApplicationConfig appConfig;
     private final ExecutorService executorService;
     private final Map<String, SubscriberService> subscribers;
 
-    public CoordinatorImpl(RateManager rateManager, ApplicationConfig applicationConfig) {
+    public CoordinatorImpl(RateManager rateManager, MailSender mailSender, ApplicationConfig applicationConfig) {
         log.info("Coordinator::Initializing Coordinator...");
+        this.mailSender = mailSender;
+        this.rateManager = rateManager;
         this.appConfig = applicationConfig;
+
         this.subscribersConfigFile = appConfig.getValue("subscribers.config.file");
         this.connectionRetryLimit = appConfig.getIntValue("connection.retry.limit");
         this.retryDelaySeconds = appConfig.getIntValue("retry.delay.seconds");
         this.exchangeRates = appConfig.getExchangeRates();
 
-        this.rateManager = rateManager;
         this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
         this.subscribers = new ConcurrentHashMap<>();
@@ -123,7 +127,7 @@ public class CoordinatorImpl implements CoordinatorService {
         if (retryCount >= connectionRetryLimit) {
             log.error("Coordinator::Maximum retry limit ({}) reached for platform '{}'. Connection attempts abandoned.",
                     connectionRetryLimit, platformName);
-            // TODO:: ADD MAIL LOGIC.
+            mailSender.sendConnectionFailureNotification(platformName,connectionRetryLimit,retryDelaySeconds);
             return;
         }
 
