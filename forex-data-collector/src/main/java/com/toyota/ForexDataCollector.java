@@ -9,7 +9,9 @@ import com.toyota.publisher.Impl.KafkaServiceImpl;
 import com.toyota.publisher.KafkaService;
 import com.toyota.service.CoordinatorService;
 import com.toyota.service.Impl.CoordinatorImpl;
+import com.toyota.service.Impl.EmailSenderImpl;
 import com.toyota.service.Impl.RateManagerImpl;
+import com.toyota.service.MailSender;
 import com.toyota.service.RateManager;
 
 public class ForexDataCollector {
@@ -23,7 +25,9 @@ public class ForexDataCollector {
         KafkaService kafkaService = new KafkaServiceImpl(appConfig);
         RateManager rateManager = new RateManagerImpl(kafkaService, redisService, calculationService);
 
-        CoordinatorService coordinatorService = new CoordinatorImpl(rateManager,appConfig);
+        MailSender mailSender = new EmailSenderImpl(appConfig);
+
+        CoordinatorService coordinatorService = new CoordinatorImpl(rateManager,mailSender,appConfig);
 
     }
 }
