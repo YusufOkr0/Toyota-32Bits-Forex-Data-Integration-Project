@@ -12,6 +12,7 @@
         <module>forex-data-collector</module>
         <module>rest-data-provider</module>
         <module>tcp-data-provider</module>
+        <module>kafka-db-consumer</module>
     </modules>
 
 

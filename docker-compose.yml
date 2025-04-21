@@ -59,6 +59,7 @@ services:
     ports:
       - "8090:8090"
     environment:
+      - SERVER_PORT=8090
       - CURRENCY_PAIRS=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
       - TCP_USDTRY_BID=37.9973
       - TCP_USDTRY_ASK=38.0333
