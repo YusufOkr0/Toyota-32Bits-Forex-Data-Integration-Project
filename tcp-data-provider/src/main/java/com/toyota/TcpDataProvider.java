@@ -97,10 +97,6 @@ public class TcpDataProvider {
                 MINIMUM_RATE_CHANGE,
                 MAXIMUM_RATE_CHANGE
         );
-
-        executorService.execute(fxDataServer::startServer);
-        executorService.execute(publisher::startBroadcast);
-
         logger.info("============================================================");
         logger.info("             TCP FX DATA PROVIDER - BOOTING UP              ");
         logger.info("============================================================");
@@ -135,6 +131,12 @@ public class TcpDataProvider {
         logger.info(" - Spike Percentage          : {}", SPIKE_PERCENTAGE);
         logger.info(" - Min Rate Change           : {}", MINIMUM_RATE_CHANGE);
         logger.info(" - Max Rate Change           : {}", MAXIMUM_RATE_CHANGE);
+
+
+        executorService.execute(fxDataServer::startServer);
+        executorService.execute(publisher::startBroadcast);
+
+
 
         logger.info(">> Background Services");
         logger.info(" - FxDataServer              : READY");

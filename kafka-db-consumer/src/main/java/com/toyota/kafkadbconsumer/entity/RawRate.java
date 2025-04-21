@@ -1,32 +1,44 @@
 package com.toyota.kafkadbconsumer.entity;
 
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class RawRate {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "rate_name")
     private String name;
 
-    @Column(name = "bid")
+
     private BigDecimal bid;
 
-    @Column(name = "ask")
+
     private BigDecimal ask;
 
-    @Column(name = "rate_update_time")
     private LocalDateTime rateUpdateTime;
 
-    @Column(name = "db_update_time")
     private LocalDateTime dbUpdateTime;
 
-    @PrePersist
+
     private void onUpdate(){
         dbUpdateTime = LocalDateTime.now();
+    }
+
+    @Override
+    public String toString() {
+        return "RawRate{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", bid=" + bid +
+                ", ask=" + ask +
+                ", rateUpdateTime=" + rateUpdateTime +
+                ", dbUpdateTime=" + dbUpdateTime +
+                '}';
     }
 }
