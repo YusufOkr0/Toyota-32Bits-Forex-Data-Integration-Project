@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.toyota</groupId>
-	<artifactId>kafkadbconsumer</artifactId>
+	<artifactId>kafka-db-consumer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>kafka-db-consumer</name>
 	<description>Kafka consumer for consume forex data and save to the database</description>
@@ -30,7 +30,8 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
-<!--		<dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
@@ -38,10 +39,6 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
-		</dependency>-->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 
 		<dependency>

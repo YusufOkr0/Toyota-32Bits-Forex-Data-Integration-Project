@@ -1,6 +1,8 @@
 package com.toyota.kafkadbconsumer.entity;
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,22 +12,31 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@Entity(name = "calculated_rates")
 public class CalculatedRate {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "rate_name")
     private String name;
 
+    @Column(name = "bid")
     private BigDecimal bid;
 
-
+    @Column(name = "ask")
     private BigDecimal ask;
 
+    @Column(name = "rate_update_time")
     private LocalDateTime rateUpdateTime;
 
+    @Column(name = "db_update_time")
     private LocalDateTime dbUpdateTime;
 
-    private void onUpdate(){
+    @PrePersist
+    private void onSave(){
         dbUpdateTime = LocalDateTime.now();
     }
 
