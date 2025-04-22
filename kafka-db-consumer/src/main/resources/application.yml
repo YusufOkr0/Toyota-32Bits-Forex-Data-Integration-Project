@@ -17,7 +17,7 @@ spring:
 
 kafka:
   custom:
-    bootstrap-servers: localhost:9093
+    bootstrap-servers: localhost:9092
     consumer:
       raw:
         topic: raw-rates

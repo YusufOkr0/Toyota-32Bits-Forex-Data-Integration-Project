@@ -74,7 +74,7 @@ services:
       - forex-net
 
   tcp-data-provider:
-    image: yusufokr0/tcp-forex-data-provider
+    image: yusufokr0/tcp-forex-data-provider:1.0.0
     container_name: tcp_data_provider_app
     ports:
       - "8090:8090"
@@ -96,6 +96,7 @@ services:
       - PUBLISH_FREQUENCY=10000
       - USER_CREDENTIALS=user|pass,admin|admin
       - SPIKE_INTERVAL=10
+      - TOYOTA_LOG_LEVEL=TRACE
     networks:
       - forex-net
 
