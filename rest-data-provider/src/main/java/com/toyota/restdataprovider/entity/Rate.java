@@ -1,9 +1,8 @@
 package com.toyota.restdataprovider.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,8 +10,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter @Setter
+@RedisHash(value = "rest_platform_rates")
 public class Rate {
 
+    @Id
     private String name;
 
     private BigDecimal bid;
