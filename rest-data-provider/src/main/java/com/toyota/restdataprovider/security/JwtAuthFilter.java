@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,7 @@ import java.io.IOException;
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
@@ -42,6 +44,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
+        log.info("Incoming request to: {}", requestURI);
 
         if (requestURI.equals("/auth/register") || requestURI.equals("/auth/login")) {
             filterChain.doFilter(request, response);
@@ -52,19 +55,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try{
             final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+            log.debug("Authorization header: {}", authHeader);
+
             if(authHeader == null || !authHeader.startsWith(BEARER_PREFIX)){
+                log.warn(AUTH_HEADER_MISSING);
                 throw new InvalidAuthenticationHeaderException(AUTH_HEADER_MISSING);
             }
 
             final String jwtToken = authHeader.substring(7);
 
             if(jwtToken.isBlank()){
+                log.warn("JWT token is blank");
                 throw new InvalidTokenException(JWT_TOKEN_BLANK);
             }
 
             final String username = jwtUtil.extractUsername(jwtToken);
+            log.debug("Extracted username from token: {}", username);
 
             if ((username == null) || username.isBlank()) {
+                log.warn(USERNAME_INVALID);
                 throw new InvalidTokenException(USERNAME_INVALID);
             }
 
@@ -72,6 +81,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if(jwtUtil.isTokenValid(jwtToken)){
+                    log.info("JWT token is valid. Setting authentication for user: {}", username);
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails.getUsername(),
                             null,
@@ -80,6 +90,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
+                    log.warn("JWT token is invalid or expired for user: {}", username);
                     throw new InvalidTokenException(TOKEN_EXPIRED);
                 }
             }
@@ -88,9 +99,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request,response);
 
         } catch (AuthenticationException ex) {
+            log.error("Authentication error during JWT filter: {}", ex.getMessage());
             authenticationEntryPoint.commence(request,response,ex);     // Catch the exception and redirect to the entry point.
         }
-
     }
 
 

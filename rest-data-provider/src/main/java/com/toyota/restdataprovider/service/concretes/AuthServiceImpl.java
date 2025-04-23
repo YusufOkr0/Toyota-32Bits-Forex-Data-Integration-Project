@@ -13,6 +13,7 @@ import com.toyota.restdataprovider.repository.UserRepository;
 import com.toyota.restdataprovider.security.JwtUtil;
 import com.toyota.restdataprovider.service.abstracts.AuthService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -36,12 +38,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public RegisterResponse signUp(RegisterRequest registerRequest) {
+        log.info("Processing registration request for username: {}", registerRequest.getUsername());
 
         validateRegisterRequest(registerRequest);
 
         String pricingPlanStr = registerRequest
                 .getPricingPlan()
                 .toUpperCase();
+        log.debug("Creating user with pricing plan: {}", pricingPlanStr);
 
         ForexUser forexUser = ForexUser.builder()
                 .email(registerRequest.getEmail())
@@ -67,6 +71,7 @@ public class AuthServiceImpl implements AuthService {
         Log in to claim your token and sail smoothly in the ocean of market trends.
         """, registerRequest.getUsername()));
 
+        log.info("Registration completed successfully for username: {}", registerRequest.getUsername());
         return registerResponse;
     }
 
@@ -74,6 +79,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+        log.info("Processing login request for username: {}", loginRequest.getUsername());
 
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.getUsername(),
@@ -85,6 +91,8 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtUtil.generateJwtToken(userDetails);
 
+
+        log.info("Login successful for username: {}", loginRequest.getUsername());
         return new LoginResponse(jwtToken);
 
     }
@@ -100,16 +108,18 @@ public class AuthServiceImpl implements AuthService {
 
 
     private void validateRegisterRequest(RegisterRequest registerRequest) {
-
+        log.debug("Validating registration request for username: {}", registerRequest.getUsername());
         String username = registerRequest.getUsername();
         String email = registerRequest.getEmail();
 
         userRepository.findByUsername(username)
                 .ifPresent(ex -> {
+                    log.warn("Username already exists: {}", username);
                     throw new UsernameAlreadyExistsException(String.format("There is already a user in the system with the username: {%s} ",username));
                 });
         userRepository.findByEmail(email)
                 .ifPresent(forexUser -> {
+                    log.warn("Email already taken: {}", email);
                     throw new TakenEmailException(String.format("Given email: {%s} is taken",email));
                 });
 
@@ -117,7 +127,9 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             PricingPlan.valueOf(comingPlan);
+            log.debug("Pricing plan validated: {}", comingPlan);
         }catch (IllegalArgumentException exception){
+            log.warn("Invalid pricing plan: {}", comingPlan);
             throw new InvalidPricingPlanException(String.format("Given plan: %s does not exists", comingPlan));
         }
 

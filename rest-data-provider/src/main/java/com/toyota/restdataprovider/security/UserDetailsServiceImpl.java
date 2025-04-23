@@ -3,6 +3,7 @@ package com.toyota.restdataprovider.security;
 import com.toyota.restdataprovider.entity.ForexUser;
 import com.toyota.restdataprovider.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
+@Slf4j
 @RequiredArgsConstructor
 @Component
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -19,10 +21,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.debug("Attempting to load user with username: {}", username);
 
         return userRepository.findByUsername(username)
-                .map(this::buildUserDetails)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+                .map(user -> {
+                    log.debug("User found: {}", user.getUsername());
+                    return buildUserDetails(user);
+                })
+                .orElseThrow(() -> {
+                    log.warn("User not found with username: {}", username);
+                    return new UsernameNotFoundException("User not found with username: " + username);
+                });
 
     }
 
