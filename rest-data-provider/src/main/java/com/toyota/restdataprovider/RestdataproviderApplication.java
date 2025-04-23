@@ -29,7 +29,7 @@ public class RestdataproviderApplication implements CommandLineRunner {
 		LocalDateTime timeStamp = LocalDateTime.now();
 		initialRateConfig.getRates().forEach((rateName,rateConfig) -> {
 			rateRepository.save(new Rate(
-					"REST_" + rateName.toUpperCase(),
+					"REST_" + rateName.toUpperCase(),			// HERE I PUT A PREFIX TO THE RATE NAME.
 					rateConfig.getBid(),
 					rateConfig.getAsk(),
 					timeStamp,
