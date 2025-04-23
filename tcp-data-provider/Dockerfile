@@ -4,8 +4,8 @@ LABEL authors="yusufokr0"
 
 WORKDIR /app
 
-COPY target/tcp-data-provider.jar /app/tcp-data-provider.jar
+COPY target/tcp-data-provider.jar app.jar
 
 EXPOSE 8090
 
-ENTRYPOINT ["java","-jar","tcp-data-provider.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]

@@ -1,0 +1,17 @@
+rest:
+  rates:
+    usdtry:
+      bid: 37.9973
+      ask: 38.0333
+      min-limit: 35.2134
+      max-limit: 40.1324
+    eurusd:
+      bid: 1.0848
+      ask: 1.0949
+      min-limit: 1.01254
+      max-limit: 1.21423
+    gbpusd:
+      bid: 1.295
+      ask: 1.395
+      min-limit: 1.11245
+      max-limit: 1.42142

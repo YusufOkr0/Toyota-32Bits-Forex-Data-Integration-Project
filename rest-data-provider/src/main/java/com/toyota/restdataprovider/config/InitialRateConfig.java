@@ -10,6 +10,7 @@ import java.util.Map;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "rest")
+
 public class InitialRateConfig {
 
     Map<String,CurrencyRateConfig> rates;

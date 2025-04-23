@@ -31,7 +31,7 @@ services:
     ports:
       - "5434:5432"
     environment:
-      POSTGRES_DB: RestProviderDB
+      POSTGRES_DB: rest_provider_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     networks:
@@ -42,7 +42,7 @@ services:
 
 
   tcp-data-provider:
-    image: yusufokr0/tcp-forex-data-provider:1.0.0
+    image: yusufokr0/tcp-data-provider:1.0.0
     container_name: tcp_data_provider_app
     ports:
       - "8090:8090"
@@ -67,6 +67,8 @@ services:
       - TOYOTA_LOG_LEVEL=TRACE
     networks:
       - forex-net
+    volumes:
+      - tcp-platform-log:/tcp-data-provider/logs
 
 
   rest-data-provider:
@@ -75,7 +77,7 @@ services:
     ports:
       - "8092:8092"
     environment:
-      DATABASE_URL: jdbc:postgresql://rest-provider-db:5432/RestProviderDB
+      DATABASE_URL: jdbc:postgresql://rest-provider-db:5432/rest_provider_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -88,13 +90,18 @@ services:
       RATE_INTERVAL: 10000
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
+      LOG_LEVEL_TOYOTA: INFO
+      # SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
+      # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
+      # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
     networks:
       - forex-net
     depends_on:
       - rest-provider-db
       - redis
     volumes:
-      - rest-platform-log:/rest-data-provider
+      - rest-platform-log:/rest-data-provider/logs
+    #  - C:\Users\okur_\OneDrive\Masaüstü\32Bits_Forex_Data_Integration_Project\external-config\rest-platform\application.yml:/app/config/application.yml
 
 
 
@@ -160,6 +167,7 @@ volumes:
   postgres-data-collector:
   postgres-rest-provider:
   rest-platform-log:
+  tcp-platform-log:
 
 networks:
   forex-net:
