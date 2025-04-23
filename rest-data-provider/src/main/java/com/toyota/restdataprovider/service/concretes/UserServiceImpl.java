@@ -8,11 +8,13 @@ import com.toyota.restdataprovider.exception.InvalidPricingPlanException;
 import com.toyota.restdataprovider.repository.UserRepository;
 import com.toyota.restdataprovider.service.abstracts.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -34,6 +36,10 @@ public class UserServiceImpl implements UserService {
             forexUser.setPricingPlan(updatedPlan);
             forexUser.setUpdatedAt(LocalDateTime.now());
             userRepository.save(forexUser);
+            log.info("Pricing plan updated. Username: {}, New Plan: {}, Updated At: {}",
+                    forexUser.getUsername(),
+                    forexUser.getPricingPlan().name(),
+                    forexUser.getUpdatedAt());
         }catch (IllegalArgumentException exception){
             throw new InvalidPricingPlanException(String.format("Given plan: %s does not exists", comingPlan));
         }

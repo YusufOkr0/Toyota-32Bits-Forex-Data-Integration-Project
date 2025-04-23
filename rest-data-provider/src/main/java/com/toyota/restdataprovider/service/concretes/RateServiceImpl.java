@@ -3,7 +3,9 @@ package com.toyota.restdataprovider.service.concretes;
 import com.toyota.restdataprovider.dtos.response.RateDto;
 import com.toyota.restdataprovider.entity.Rate;
 import com.toyota.restdataprovider.exception.CurrencyPairNotFoundException;
+import com.toyota.restdataprovider.repository.RateRepository;
 import com.toyota.restdataprovider.service.abstracts.RateService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -11,82 +13,79 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 @Service
+@Slf4j
 public class RateServiceImpl implements RateService {
 
-    private static final BigDecimal MINIMUM_RATE_CHANGE = new BigDecimal("0.001");
-    private static final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal("0.004");
+    @Value("${minimum.rate.change}")
+    private BigDecimal minimumRateChange;
 
+    @Value("${maximum.rate.change}")
+    private BigDecimal maximumRateChange;
 
-    private static final BigDecimal SPIKE_PERCENTAGE = new BigDecimal("0.011");  // % 1.1  FOR NOW. CHECK LATER
-    private static final int SPIKE_INTERVAL = 10;
+    @Value("${spike.percentage}")
+    private BigDecimal spikePercentage;
+
+    @Value("${spike.interval}")
+    private int spikeInterval;
     private int spikeCounter = 0;
 
+    private final RateRepository rateRepository;
 
-    private final Map<String, Rate> currencyPairRepository;
-
-
-
-    public RateServiceImpl(
-            @Value("${rest.usdtry.bid}") String usdTryBid,
-            @Value("${rest.usdtry.ask}") String usdTryAsk,
-            @Value("${rest.eurusd.bid}") String eurUsdBid,
-            @Value("${rest.eurusd.ask}") String eurUsdAsk,
-            @Value("${rest.gbpusd.bid}") String gbpUsdBid,
-            @Value("${rest.gbpusd.ask}") String gbpUsdAsk,
-            @Value("${rest.usdtry.min-limit}") String usdTryMinLimit,
-            @Value("${rest.usdtry.max-limit}") String usdTryMaxLimit,
-            @Value("${rest.eurusd.min-limit}") String eurUsdMinLimit,
-            @Value("${rest.eurusd.max-limit}") String eurUsdMaxLimit,
-            @Value("${rest.gbpusd.min-limit}") String gbpUsdMinLimit,
-            @Value("${rest.gbpusd.max-limit}") String gbpUsdMaxLimit
-    ) {
-        this.currencyPairRepository = new ConcurrentHashMap<>();
-
-        setUpInitialRates(
-                usdTryBid, usdTryAsk, usdTryMinLimit, usdTryMaxLimit,
-                eurUsdBid, eurUsdAsk, eurUsdMinLimit, eurUsdMaxLimit,
-                gbpUsdBid, gbpUsdAsk, gbpUsdMinLimit, gbpUsdMaxLimit
-        );
-
+    public RateServiceImpl(RateRepository rateRepository) {
+        this.rateRepository = rateRepository;
     }
 
 
 
-
-
     public RateDto getCurrencyPair(String rateName){
-        if(!currencyPairRepository.containsKey(rateName)){
-            throw new CurrencyPairNotFoundException(String.format("Currency code is invalid: %s",rateName));
-        }
-        Rate rate = currencyPairRepository.get(rateName);
-        return RateDto.builder()
+
+        log.info("Fetching currency pair: {}", rateName);
+
+        Rate rate = rateRepository.findByNameIgnoreCase(rateName)
+                .orElseThrow(() -> {
+                    log.warn("Currency code {} is invalid.",rateName);
+                    return new CurrencyPairNotFoundException(String.format("Currency code is invalid: %s", rateName));
+                });
+
+        RateDto rateDto = RateDto.builder()
                 .name(rate.getName())
                 .bid(rate.getBid())
                 .ask(rate.getAsk())
                 .timestamp(rate.getTimestamp())
                 .build();
+        log.debug("Currency pair retrieved: {} with bid: {}, ask: {}", rateName, rate.getBid(), rate.getAsk());
+        return rateDto;
     }
 
 
 
 
-    @Scheduled(fixedDelay = 2000L)
+    @Scheduled(fixedDelayString = "${rate.update.interval}",initialDelay = 3000L)
     private void updateCurrencyPairs(){
+        log.debug("Starting currency pairs update, spikeCounter: {}", spikeCounter);
         spikeCounter++;
 
-        for(Rate rate : currencyPairRepository.values()){     // search the currency pairs.
+        Iterable<Rate> allRatesInRepo = rateRepository.findAll();
+
+        for(Rate rate : allRatesInRepo){
+            if (rate == null) {
+                log.warn("Encountered null rate during update. Please check if everything is okay in Redis.");
+                continue;
+            }
 
             String rateName = rate.getName();
             BigDecimal bid = rate.getBid();
             BigDecimal ask = rate.getAsk();
             BigDecimal spread = ask.subtract(bid);  // CONSTANT SPREAD FOR MY CASE.
 
-            BigDecimal changePercentage = determineChangePercentage();  // DETERMINE CHANGE AMOUNT
+            log.debug("Processing rate: {}, current bid: {}, ask: {}", rateName, bid, ask);
+
+            BigDecimal changePercentage = determineChangePercentage();              // DETERMINE CHANGE AMOUNT
+
+            log.debug("Change percentage for {}: {}", rateName, changePercentage);
 
             BigDecimal newBid;
             BigDecimal newAsk;
@@ -107,93 +106,48 @@ public class RateServiceImpl implements RateService {
             rate.setBid(newBid.setScale(16, RoundingMode.HALF_UP));        // UPDATE RATES WITH THE NEW VARIABLES
             rate.setAsk(newAsk.setScale(16, RoundingMode.HALF_UP));
             rate.setTimestamp(LocalDateTime.now());
+            log.debug("Updated rate: {}, new bid: {}, new ask: {}", rateName, rate.getBid(), rate.getAsk());
 
-            if (rateName.equals("REST_USDTRY"))System.out.println(rate.toString() + "  " + spikeCounter);
+            rateRepository.save(rate);
         }
-
+        log.debug("Currency pairs update completed");
     }
 
 
 
     private BigDecimal determineChangePercentage(){
         BigDecimal changePercentage;
-
-        if (spikeCounter % SPIKE_INTERVAL == 0) {
-            changePercentage = SPIKE_PERCENTAGE;
+        if (spikeCounter % spikeInterval == 0) {
+            changePercentage = spikePercentage;
+            spikeCounter = 0;
+            log.debug("Applying spike percentage: {}", changePercentage);
         } else {
-            changePercentage = MAXIMUM_RATE_CHANGE
-                    .subtract(MINIMUM_RATE_CHANGE)
+            changePercentage = maximumRateChange
+                    .subtract(minimumRateChange)
                     .multiply(BigDecimal.valueOf(Math.random()))
-                    .add(MINIMUM_RATE_CHANGE);
+                    .add(minimumRateChange);
+            log.debug("Calculated random change percentage: {}", changePercentage);
         }
 
         if(Math.random() < 0.5){
             changePercentage = changePercentage.negate();
+            log.debug("Negated change percentage: {}", changePercentage);
         }
-
         return changePercentage;
     }
 
 
     private BigDecimal applyRateBounds(BigDecimal bidValue, BigDecimal minLimit, BigDecimal maxLimit) {
         if (bidValue.compareTo(minLimit) < 0) {
+            log.debug("Bid value {} below min limit {}, adjusted to min limit", bidValue, minLimit);
             return minLimit;
         } else if (bidValue.compareTo(maxLimit) > 0) {
+            log.debug("Bid value {} above max limit {}, adjusted to max limit", bidValue, maxLimit);
             return maxLimit;
         }
         return bidValue;
     }
 
-
-
-
-
-
-    private BigDecimal parseBigDecimal(String value) {
-        try {
-            return new BigDecimal(value);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Exception while parsing String to BigDecimal. Please check the values inside the properties file.");
-        }
-    }
-
-
-
-
-
-
-    private void setUpInitialRates(
-            String usdTryBid, String usdTryAsk, String usdTryMinLimit, String usdTryMaxLimit,
-            String eurUsdBid, String eurUsdAsk, String eurUsdMinLimit, String eurUsdMaxLimit,
-            String gbpUsdBid, String gbpUsdAsk, String gbpUsdMinLimit, String gbpUsdMaxLimit
-    ) {
-        LocalDateTime timeStamp = LocalDateTime.now();
-
-        currencyPairRepository.put("REST_USDTRY", new Rate(
-                "REST_USDTRY",
-                parseBigDecimal(usdTryBid),
-                parseBigDecimal(usdTryAsk),
-                timeStamp,
-                parseBigDecimal(usdTryMinLimit),
-                parseBigDecimal(usdTryMaxLimit)
-        ));
-        currencyPairRepository.put("REST_EURUSD", new Rate(
-                "REST_EURUSD",
-                parseBigDecimal(eurUsdBid),
-                parseBigDecimal(eurUsdAsk),
-                timeStamp,
-                parseBigDecimal(eurUsdMinLimit),
-                parseBigDecimal(eurUsdMaxLimit)
-        ));
-        currencyPairRepository.put("REST_GBPUSD", new Rate(
-                "REST_GBPUSD",
-                parseBigDecimal(gbpUsdBid),
-                parseBigDecimal(gbpUsdAsk),
-                timeStamp,
-                parseBigDecimal(gbpUsdMinLimit),
-                parseBigDecimal(gbpUsdMaxLimit)
-        ));
-    }
 
 }
 

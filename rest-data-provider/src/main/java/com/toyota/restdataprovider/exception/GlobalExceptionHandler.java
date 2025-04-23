@@ -1,15 +1,11 @@
 package com.toyota.restdataprovider.exception;
 
 
-
-import com.toyota.restdataprovider.exception.security.InvalidAuthenticationHeaderException;
-import com.toyota.restdataprovider.exception.security.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -70,6 +67,7 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 LocalDateTime.now()
         );
+        log.error("Exception caught: {} - URI: {}", ex.getMessage(), request.getRequestURI(), ex);
 
         return ResponseEntity
                 .status(status)

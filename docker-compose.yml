@@ -11,11 +11,11 @@ services:
     volumes:
       - redis-data:/data
 
-  postgres:
+  data-collector-db:
     image: postgres
-    container_name: postgres
+    container_name: data-collector-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: forex_db
       POSTGRES_USER: postgres
@@ -23,7 +23,92 @@ services:
     networks:
       - forex-net
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-collector:/var/lib/postgresql/data
+
+  rest-provider-db:
+    image: postgres
+    container_name: rest-provider-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: rest_provider_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - forex-net
+    volumes:
+      - postgres-rest-provider:/var/lib/postgresql/data
+
+
+
+  tcp-data-provider:
+    image: yusufokr0/tcp-data-provider:1.0.0
+    container_name: tcp_data_provider_app
+    ports:
+      - "8090:8090"
+    environment:
+      - SERVER_PORT=8090
+      - CURRENCY_PAIRS=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
+      - TCP_USDTRY_BID=37.9973
+      - TCP_USDTRY_ASK=38.0333
+      - TCP_USDTRY_MIN_LIMIT=35.2134
+      - TCP_USDTRY_MAX_LIMIT=40.1324
+      - TCP_EURUSD_BID=1.0848
+      - TCP_EURUSD_ASK=1.0949
+      - TCP_EURUSD_MIN_LIMIT=1.01254
+      - TCP_EURUSD_MAX_LIMIT=1.21423
+      - TCP_GBPUSD_BID=1.295
+      - TCP_GBPUSD_ASK=1.395
+      - TCP_GBPUSD_MIN_LIMIT=1.11245
+      - TCP_GBPUSD_MAX_LIMIT=1.42142
+      - PUBLISH_FREQUENCY=10000
+      - USER_CREDENTIALS=user|pass,admin|admin
+      - SPIKE_INTERVAL=10
+      - TOYOTA_LOG_LEVEL=TRACE
+    networks:
+      - forex-net
+    volumes:
+      - tcp-platform-log:/tcp-data-provider/logs
+
+
+  rest-data-provider:
+    image: yusufokr0/rest-data-provider:1.0.0
+    container_name: rest-data-provider-app
+    ports:
+      - "8092:8092"
+    environment:
+      DATABASE_URL: jdbc:postgresql://rest-provider-db:5432/rest_provider_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      REDIS_CUSTOM_HOST: redis
+      REDIS_CUSTOM_PORT: 6379
+      MINIMUM_RATE_CHANGE: 0.001
+      MAXIMUM_RATE_CHANGE: 0.004
+      RATE_INTERVAL: 10000
+      SPIKE_PERCENTAGE: 0.011
+      SPIKE_INTERVAL: 20
+      LOG_LEVEL_TOYOTA: INFO
+      # SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
+      # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
+      # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
+    networks:
+      - forex-net
+    depends_on:
+      - rest-provider-db
+      - redis
+    volumes:
+      - rest-platform-log:/rest-data-provider/logs
+    #  - C:\Users\okur_\OneDrive\Masaüstü\32Bits_Forex_Data_Integration_Project\external-config\rest-platform\application.yml:/app/config/application.yml
+
+
+
+
+
+
+
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -73,40 +158,16 @@ services:
     networks:
       - forex-net
 
-  tcp-data-provider:
-    image: yusufokr0/tcp-forex-data-provider:1.0.0
-    container_name: tcp_data_provider_app
-    ports:
-      - "8090:8090"
-    environment:
-      - SERVER_PORT=8090
-      - CURRENCY_PAIRS=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
-      - TCP_USDTRY_BID=37.9973
-      - TCP_USDTRY_ASK=38.0333
-      - TCP_USDTRY_MIN_LIMIT=35.2134
-      - TCP_USDTRY_MAX_LIMIT=40.1324
-      - TCP_EURUSD_BID=1.0848
-      - TCP_EURUSD_ASK=1.0949
-      - TCP_EURUSD_MIN_LIMIT=1.01254
-      - TCP_EURUSD_MAX_LIMIT=1.21423
-      - TCP_GBPUSD_BID=1.295
-      - TCP_GBPUSD_ASK=1.395
-      - TCP_GBPUSD_MIN_LIMIT=1.11245
-      - TCP_GBPUSD_MAX_LIMIT=1.42142
-      - PUBLISH_FREQUENCY=10000
-      - USER_CREDENTIALS=user|pass,admin|admin
-      - SPIKE_INTERVAL=10
-      - TOYOTA_LOG_LEVEL=TRACE
-    networks:
-      - forex-net
-
 
 volumes:
   redis-data:
   zk-data:
   zk-log:
   kafka-data:
-  postgres-data:
+  postgres-data-collector:
+  postgres-rest-provider:
+  rest-platform-log:
+  tcp-platform-log:
 
 networks:
   forex-net:
