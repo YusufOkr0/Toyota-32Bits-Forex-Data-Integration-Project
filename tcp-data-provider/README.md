@@ -204,7 +204,7 @@ Once connected, send commands by typing them and pressing **Enter**:
 
 ### Server Responses
 
-The server responds to client commands with status messages (`\r\n` terminated):
+The server responds to client commands with status messages:
 
 *   **`SUCCESS|CONNECTED`**: Authentication successful.
 *   **`SUCCESS|Subscribed to currency pair: <PAIR>`**: Subscription successful.

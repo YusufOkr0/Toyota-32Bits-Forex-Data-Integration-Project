@@ -27,8 +27,6 @@ public class PythonCalculator implements CalculationService {
 
     public boolean isInComingRateValid(String inComingBid, String inComingAsk, List<String> cachedBids, List<String> cachedAsks) {
         try {
-            System.out.println("function is called");
-            System.out.println(System.currentTimeMillis());
             Context context = contextHolder.get();
 
             Value function = context
@@ -41,10 +39,7 @@ public class PythonCalculator implements CalculationService {
                     cachedBids,
                     cachedAsks
             );
-            System.out.println("function is end");
-            System.out.println(System.currentTimeMillis());
             return result.asBoolean();
-
 
         } catch (Exception e) {
             System.err.printf("Exception. %s \n", e.getMessage());
@@ -109,12 +104,8 @@ public class PythonCalculator implements CalculationService {
             BigDecimal bid = new BigDecimal(rate_bid);
             BigDecimal ask = new BigDecimal(rate_ask);
 
-            return new CalculatedRate(
-                    rateName,
-                    bid,
-                    ask,
-                    LocalDateTime.now()
-            );
+
+            return buildCalculatedRate(rateName,bid,ask);
 
         } catch (Exception e) {
             System.err.printf("Exception in calculateRateDependentOnUsdTry. %s \n", e.getMessage());
@@ -144,6 +135,25 @@ public class PythonCalculator implements CalculationService {
         }
         return null;
     }
+
+
+    private CalculatedRate buildCalculatedRate(String rateName,BigDecimal bid,BigDecimal ask){
+
+        String derivedRateName = switch (rateName) {
+            case "EURUSD" -> "EURTRY";
+            case "GBPUSD" -> "GBPTRY";
+            default -> "unknown_rate";
+        };
+
+        return new CalculatedRate(
+                derivedRateName,
+                bid,
+                ask,
+                LocalDateTime.now()
+        );
+    }
+
+
 
 
     private Context createContext() {

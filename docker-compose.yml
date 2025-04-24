@@ -80,9 +80,7 @@ services:
       DATABASE_URL: jdbc:postgresql://rest-provider-db:5432/rest_provider_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: true
-      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
       REDIS_CUSTOM_HOST: redis
       REDIS_CUSTOM_PORT: 6379
       MINIMUM_RATE_CHANGE: 0.001
@@ -91,7 +89,7 @@ services:
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
       LOG_LEVEL_TOYOTA: INFO
-      # SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
+      #SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
       # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
       # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
     networks:
@@ -101,10 +99,29 @@ services:
       - redis
     volumes:
       - rest-platform-log:/rest-data-provider/logs
-    #  - C:\Users\okur_\OneDrive\Masaüstü\32Bits_Forex_Data_Integration_Project\external-config\rest-platform\application.yml:/app/config/application.yml
+      #- ./external-config/rest-platform/application.yml:/app/config/application.yml
 
 
 
+  kafka-db-consumer:
+    image: yusufokr0/kafka-db-consumer:1.0.0
+    container_name: kafka-db-consumer
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://data-collector-db:5432/forex_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
+      KAFKA_CUSTOM_CONSUMER_RAW_GROUP_ID: raw-rates-group
+      KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC: calculated-rates
+      KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID: calculated-rates-group
+      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: latest
+    networks:
+      - forex-net
+    depends_on:
+      - kafka
+      - data-collector-db
 
 
 

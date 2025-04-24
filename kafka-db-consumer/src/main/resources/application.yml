@@ -1,29 +1,31 @@
 spring:
   application:
     name: kafkadbconsumer
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/forex_db
-    username: postgres
-    password: 5591564
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/forex_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:5591564}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
 
 
 kafka:
   custom:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_CUSTOM_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       raw:
-        topic: raw-rates
-        group-id: raw-rates-group
+        topic: ${KAFKA_CUSTOM_CONSUMER_RAW_TOPIC:raw-rates}
+        group-id: ${KAFKA_CUSTOM_CONSUMER_RAW_GROUP_ID:raw-rates-group}
       calculated:
-        topic: calculated-rates
-        group-id: calculated-rates-group
-      auto-offset-reset: latest
+        topic: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC:calculated-rates}
+        group-id: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID:calculated-rates-group}
+      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:latest}
 
