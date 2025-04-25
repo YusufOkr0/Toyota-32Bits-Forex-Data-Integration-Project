@@ -11,7 +11,7 @@ This project aims to develop a comprehensive Java-based software solution for co
 The project includes the following components:
 
 ### **Forex Data Simulation platforms**
-*  `Tcp-data-provider`: TCP socket-based streaming data.
+*  `Tcp-data-provider`: TCP socket-based streaming data. [See detailed info](./tcp-data-provider/README.md)
 *  `Rest-data-provider`: REST API-based data on request.
 
 ### **Forex-data-collector**
@@ -24,11 +24,15 @@ The project includes the following components:
 * Not available right now.
 
 ### **Redis**
-* Cache used to temporarily store raw and calculated exchange rates.
+* Cache used to temporarily store raw and calculated exchange rates in `forex-data-collector` project.
+* Also used for exchange rate repository in `rest-data-provider` project.
 
 ## **Project Architecture**
 
-* **PROJECT STRUCTURE IMAGE WILL BE HERE SOON.**
+<div align="center">
+  <img alt="Project-Architecture2" src="./assets/Project-Architecture-2.png" width="800"/>
+</div>
+
 
 ## **Installation**
 

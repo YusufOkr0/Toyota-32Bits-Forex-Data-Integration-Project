@@ -1,13 +1,13 @@
-# TCP FX Data Provider
+
+<h1 align="center">TCP FX Data Provider</h1>
 
 [![Java Version](https://img.shields.io/badge/Java-17-blue.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Build Tool](https://img.shields.io/badge/Build-Maven-orange.svg)](https://maven.apache.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) <!-- Add your LICENSE file -->
 [![Docker Support](https://img.shields.io/badge/Docker-Supported-blue.svg?logo=docker)](https://www.docker.com/)
 
 > A Java-based TCP server application that simulates and broadcasts real-time Foreign Exchange (FX) rate data to subscribed clients.
 
-This project provides a robust TCP server built using Java NIO for handling client connections efficiently. It simulates FX rate fluctuations, including configurable volatility and periodic spikes, based on settings in an `application.properties` file or environment variables. Clients can connect, authenticate, and subscribe to specific currency pairs to receive real-time updates.
+This project provides a robust TCP server built using *Java NIO* for handling client connections efficiently. It simulates FX rate fluctuations, including configurable volatility and periodic spikes, based on settings in an `application.properties` file or environment variables. Clients can connect, authenticate, and subscribe to specific currency pairs to receive real-time updates.
 
 ## Table of Contents
 *   [Core Components](#core-components)
@@ -110,16 +110,6 @@ The included `Dockerfile` allows you to containerize the application.
     ```bash
     docker build -t tcp-fx-provider .
     ```
-    *(You can replace `tcp-fx-provider` with your preferred image name)*
-
-#### Using Docker
-
-The included `Dockerfile` allows you to containerize the application.
-
-1.  **Build the Docker image:** (Ensure you have built the JAR first with `mvn clean package`)
-    ```bash
-    docker build -t tcp-fx-provider .
-    ```
 
 2.  **Run the Docker container:**
     ```bash
@@ -138,7 +128,7 @@ The included `Dockerfile` allows you to containerize the application.
         ```
 
     *   **Example: Overriding Currency Pairs (Important!):**
-        If you override `CURRENCY_PAIRS`, you **must** also provide the initial `bid`, `ask`, `min.limit`, and `max.limit` values for **each** new pair as environment variables. The variable names follow the pattern `PAIR_NAME_PROPERTY_NAME` (uppercase, dots replaced with underscores).
+        If you override `CURRENCY_PAIRS`, you **must** also provide the initial `bid`, `ask`, `min.limit`, and `max.limit` values for **each** new pair as environment variables. The variable names follow the pattern `PAIRNAME_PROPERTYNAME` (uppercase, dots replaced with underscores).
 
         ```bash
         docker run -d -p 8090:8090 \
@@ -161,11 +151,11 @@ The included `Dockerfile` allows you to containerize the application.
 
 Interact with the server using `telnet`. Commands are pipe-delimited (`|`) and sent by pressing **Enter**.
 
-**Important:** Ensure your `telnet` client is in **line mode** (often the default, but sometimes requires setting `mode line` after connecting).
+**Important:** Ensure your `telnet` client is in **line mode** (Requires setting `mode line` after connecting).
 
 ```bash
 # 1. Connect to the server
-telnet localhost 8090
+telnet server_ip_address server_port
 ```
 
 Once connected, send commands by typing them and pressing **Enter**:
