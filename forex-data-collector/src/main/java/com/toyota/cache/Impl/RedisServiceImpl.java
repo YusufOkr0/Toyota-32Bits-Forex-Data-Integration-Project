@@ -8,8 +8,8 @@ import com.toyota.cache.CacheService;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -22,7 +22,7 @@ import java.util.List;
 
 public class RedisServiceImpl implements CacheService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(RedisServiceImpl.class);
 
     private static final long TTL_IN_SECONDS = 1800L;
     private static final String RAW_RATES_KEY_PREFIX = "RawRates";

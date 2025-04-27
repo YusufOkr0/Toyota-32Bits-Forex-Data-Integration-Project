@@ -176,6 +176,66 @@ services:
       - forex-net
 
 
+
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat-oss:7.12.1
+    entrypoint: "filebeat -e -strict.perms=false"
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./forex-data-collector/logs/forex-data-collector.log:/var/log/main-app/main-app.log
+    depends_on:
+      - logstash
+    networks:
+      - logging-network
+
+
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:7.16.2
+    container_name: logstash
+    user: root
+    ports:
+      - "5044:5044"
+    environment:
+      - "XPACK_MONITORING_ENABLED=false"
+    volumes:
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    networks:
+      - logging-network
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Yusuf.32Bits
+    ports:
+      - "9200:9200" # OpenSearch API
+      - "9600:9600" # Performans izleme
+    networks:
+      - logging-network
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
+      - SERVER_HOST=0.0.0.0
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=Yusuf.32Bits
+    ports:
+      - "5601:5601" # OpenSearch Dashboards web arayüzü
+    depends_on:
+      - opensearch
+    networks:
+      - logging-network
+
+
 volumes:
   redis-data:
   zk-data:
@@ -187,5 +247,7 @@ volumes:
   tcp-platform-log:
 
 networks:
+  logging-network:
+    driver: bridge
   forex-net:
     driver: bridge
