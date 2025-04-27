@@ -1,0 +1,22 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/main-app/*.log
+
+output.logstash:
+  hosts: ["logstash:5044"]
+  ssl:
+    verification_mode: none
+
+
+setup.kibana:
+  host: "https://opensearch-dashboards:5601"
+  username: "admin"
+  password: "Yusuf.32Bits"
+  ssl:
+    verification_mode: none
+
+xpack.monitoring.enabled: false
+xpack.management.enabled: false
+
+logging.level: info

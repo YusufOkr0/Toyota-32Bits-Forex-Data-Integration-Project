@@ -6,8 +6,9 @@ import jakarta.mail.*;
 
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,7 +16,7 @@ import java.util.Properties;
 
 public class EmailSenderImpl implements MailSender {
 
-    public static final Logger log = LoggerFactory.getLogger(EmailSenderImpl.class);
+    public static final Logger log = LogManager.getLogger(EmailSenderImpl.class);
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final String username;

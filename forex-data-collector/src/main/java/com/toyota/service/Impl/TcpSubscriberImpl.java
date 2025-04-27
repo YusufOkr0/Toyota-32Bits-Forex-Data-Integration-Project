@@ -4,8 +4,9 @@ import com.toyota.service.CoordinatorService;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.Rate;
 import com.toyota.service.SubscriberService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.concurrent.Executors;
 
 public class TcpSubscriberImpl implements SubscriberService {
 
-    public static final Logger log = LoggerFactory.getLogger(TcpSubscriberImpl.class);
+    public static final Logger log = LogManager.getLogger(TcpSubscriberImpl.class);
 
     private final int serverPort;
     private final String serverHost;
