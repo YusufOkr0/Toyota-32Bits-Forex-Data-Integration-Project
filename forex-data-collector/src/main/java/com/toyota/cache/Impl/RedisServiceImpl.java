@@ -24,7 +24,7 @@ public class RedisServiceImpl implements CacheService {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
 
-    private static final long TTL_IN_SECONDS = 1800L;
+    private static final long TTL_IN_SECONDS = 60L;
     private static final String RAW_RATES_KEY_PREFIX = "RawRates";
     private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates";
 
@@ -72,6 +72,7 @@ public class RedisServiceImpl implements CacheService {
     @Override
     public List<Rate> getAllRawRatesByRateName(String rateName) {
         List<Rate> rates = new ArrayList<>();
+
         String pattern = RAW_RATES_KEY_PREFIX + "*::" + rateName;
 
         try (Jedis jedis = jedisPool.getResource()) {
@@ -86,12 +87,13 @@ public class RedisServiceImpl implements CacheService {
                         try {
                             rates.add(objectMapper.readValue(json, Rate.class));
                         } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse JSON for key: {}", key, e);
+                            logger.error("Could not parse JSON for key: {}", key, e);
                         }
                     }
                 }
                 cursor = result.getCursor();
             } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
+
         } catch (JedisConnectionException e) {
             logger.error("Redis connection error : {}", e.getMessage());
         }

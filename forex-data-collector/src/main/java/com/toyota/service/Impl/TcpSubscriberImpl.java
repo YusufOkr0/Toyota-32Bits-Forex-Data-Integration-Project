@@ -51,6 +51,7 @@ public class TcpSubscriberImpl implements SubscriberService {
 
     @Override
     public void connect(String platformName) {
+        log.info("Tcp Subscriber: Attempting to connect to platform: {}", platformName);
         try {
             socket = new Socket(serverHost, serverPort);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -61,21 +62,21 @@ public class TcpSubscriberImpl implements SubscriberService {
             String serverMessage = reader.readLine();
 
             if (serverMessage == null) {
-                log.warn("Tcp Subscriber::Connection attempt to {} failed: Server closed connection without response.", platformName);
+                log.warn("Tcp Subscriber: Connection attempt to {} failed: Server closed connection without response.", platformName);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("ERROR")) {
-                log.warn("Tcp Subscriber::Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
+                log.warn("Tcp Subscriber: Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("SUCCESS")) {
-                log.info("Tcp Subscriber::Connection to platform: {} successfully.",platformName);
+                log.info("Tcp Subscriber: Connection to platform: {} successfully.",platformName);
                 executorService.execute(() -> listenToIncomingRates(platformName));
                 coordinator.onConnect(platformName, true);
             }
 
         } catch (IOException e) {
-            log.warn("Tcp Subscriber::Connection attempt to {} failed.",platformName,e);
+            log.warn("Tcp Subscriber: Connection attempt to {} failed.",platformName,e);
             closeResources();
             coordinator.onConnect(platformName, false);
         }
@@ -85,23 +86,23 @@ public class TcpSubscriberImpl implements SubscriberService {
     public void disConnect() {
         sendMessageToServer("disconnect");
         closeResources();
-        log.info("Tcp Subscriber::Disconnected from platform: TCP successfully.");
+        log.info("Tcp Subscriber: Disconnected from platform: TCP successfully.");
     }
 
     @Override
     public void subscribe(String platformName, String rateName) {
         sendMessageToServer(String.format("subscribe|%s_%s", platformName, rateName));
-        log.info("Tcp Subscriber::Subscribed to rate: {} on platform: {}", rateName, platformName);
+        log.info("Tcp Subscriber: Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
     public void unSubscribe(String platformName, String rateName) {
         sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
-        log.info("Tcp Subscriber::Unsubscribed to rate: {} on platform: {}", rateName, platformName);
+        log.info("Tcp Subscriber: Unsubscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     private void listenToIncomingRates(String platformName) {
-        log.info("Tcp Subscriber::Start to listen to incoming rates for platform: {}",platformName);
+        log.info("Tcp Subscriber: Start to listen to incoming rates for platform: {}",platformName);
         Set<String> receivedRates = new HashSet<>();
 
         try {
@@ -121,8 +122,9 @@ public class TcpSubscriberImpl implements SubscriberService {
 
             }
         } catch (IOException e) {
-            log.warn("Tcp Subscriber::Server listening error for platform: {}",platformName);
+            log.warn("Tcp Subscriber: Server listening error for platform: {}",platformName);
         } finally {
+            receivedRates.clear();
             closeResources();
             coordinator.onDisConnect(platformName);
         }
@@ -152,7 +154,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (writer != null) writer.close();
             if (socket != null) socket.close();
         } catch (IOException e) {
-            log.error("Error closing connection:{} ",e.getMessage(),e);
+            log.error("Tcp Subscriber: Error closing connection:{} ",e.getMessage(),e);
         } finally {
             socket = null;
             reader = null;
