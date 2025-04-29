@@ -199,10 +199,10 @@ services:
     user: root
     ports:
       - "5044:5044"
-    environment:
-      - "XPACK_MONITORING_ENABLED=false"
     volumes:
       - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - opensearch
     networks:
       - logging-network
 
