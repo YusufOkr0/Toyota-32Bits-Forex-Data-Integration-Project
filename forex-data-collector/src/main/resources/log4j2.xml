@@ -8,13 +8,6 @@
         <Property name="rollingMaxFiles">7</Property>
         <Property name="deleteMaxAge">P30D</Property>
 
-        <Property name="jsonPattern">
-            {"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}", "level":"%-5level", "thread":"[%t]", "logger":"%logger{36}",
-            "message":"%msg", "exception":"%throwable"}%n
-        </Property>
-
-        <!--<Property name="ConsolePattern">%d{yyyy-MM-dd HH:mm:ss.SSS}  %-5level  [%t]  -  %logger{36}  -  %msg%n%throwable</Property>-->
-
         <Property name="consoleHighlightPattern">
             %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red bold, ERROR=red, WARN=yellow, INFO=green,
             DEBUG=blue, TRACE=magenta} - [%t] %style{%c{1.}}{cyan} - %msg%n%throwable
@@ -24,15 +17,14 @@
 
     <Appenders>
         <Console name="ConsoleAppender" target="SYSTEM_OUT">
-            <PatternLayout pattern="${consoleHighlightPattern}"
-                           disableAnsi="false"/>   <!-- disable ansi for colorize the logs -->
+            <PatternLayout pattern="${consoleHighlightPattern}" disableAnsi="false"/>   <!-- disable ansi for colorize the logs -->
         </Console>
 
         <RollingFile name="RollingFileAppender"
                      fileName="${logDir}/forex-data-collector.log"
                      filePattern="${logDir}/archive/forex-data-collector-%d{yyyy-MM-dd}-%i.log.gz">
 
-            <JsonLayout eventEol="true" compact="true" includeStacktrace="true"/>
+            <JsonLayout eventEol="true" compact="true" includeStacktrace="true" includeTimeMillis="true"/>
 
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
