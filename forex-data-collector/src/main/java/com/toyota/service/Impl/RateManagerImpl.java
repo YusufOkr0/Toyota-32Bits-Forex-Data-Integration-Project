@@ -28,6 +28,8 @@ public class RateManagerImpl implements RateManager {
         calculationService.getContextHolder().get();
     }
 
+
+
     public void handleFirstInComingRate(String platformName, String rateName, Rate inComingRate) {
         redisService.saveRawRate(
                 platformName,
@@ -37,18 +39,20 @@ public class RateManagerImpl implements RateManager {
         kafkaService.sendRawRate(inComingRate);
     }
 
+
+
     public void handleRateUpdate(String platformName, String rateName, Rate inComingRate) {
 
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);     // TÜM PLATFORMLARDAN USD TRY ALINDI.
+        List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);     // GET RATE FROM REDIS FOR ALL PLATFORMS
 
-        if (existsRates.isEmpty()) {
-            // EXCHANGE RATES MUST BE AVAILABLE IN REDIS.
+        if (existsRates.isEmpty()) {        // TTL SÜRESINCE VERI GELMEZ ISE [ BIZIM SIMULASYONUMUZDA VERI SAGLAYICIYI KAPATIRSAK ]
+                                            // REDISTEKI VERI BAYAT KABUL EDILECEK VE NULL YAPILARAK HESAPLAMALARA DAHIL EDILMEYECEK.
             return;
         }
         List<String> cachedBids = existsRates
                 .stream()
                 .map(rate -> rate.getBid().toPlainString())
-                .toList();                                      // BID VE ASK DEGERLERI AYRI OLARAK ALINDI.
+                .toList();                                      // GET BIDS AND ASKS SEPARATELY AND CONVERT STRING FORMAT TO EASE CALCULATION
         List<String> cachedAsks = existsRates
                 .stream()
                 .map(rate -> rate.getAsk().toPlainString())
@@ -60,11 +64,11 @@ public class RateManagerImpl implements RateManager {
 
         if (calculationService.isInComingRateValid(newBid, newAsk, cachedBids, cachedAsks)) {
 
-            redisService.saveRawRate(platformName, rateName, inComingRate); // VERILER GÜNCELLENDI.
+            redisService.saveRawRate(platformName, rateName, inComingRate);
             kafkaService.sendRawRate(inComingRate);
 
             if (rateName.equals("USDTRY")) {
-                calculateAndSaveUsdTry();  // CHECK LATER.  USDTRY UPDATE OLUNCA DIGER KURLARI UPDATE ETMELI MIYIM??
+                calculateAndSaveUsdTry();  // CHECK LATER.  DO I NEED TO UPDATE DEPENDENT RATES WHEN USD/TRY UPDATE ???
             } else {
                 calculateAndSaveRatesDependentOnUsdTry(rateName);
             }

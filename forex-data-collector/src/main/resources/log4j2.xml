@@ -47,7 +47,7 @@
             <AppenderRef ref="RollingFileAppender"/>
         </Root>
 
-        <Logger name="com.toyota" level="info" additivity="false">
+        <Logger name="com.toyota" level="TRACE" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>

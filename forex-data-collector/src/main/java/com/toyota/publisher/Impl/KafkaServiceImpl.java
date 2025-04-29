@@ -6,9 +6,14 @@ import com.toyota.entity.Rate;
 import com.toyota.publisher.KafkaService;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Properties;
 
 public class KafkaServiceImpl implements KafkaService {
+
+    public static final Logger logger = LogManager.getLogger(KafkaServiceImpl.class);
 
     private final String kafkaBootstrapServers;
     private final String rawRateTopic;
@@ -30,6 +35,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendRawRate(Rate rawRate){
+        logger.debug("Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -45,7 +51,8 @@ public class KafkaServiceImpl implements KafkaService {
         );
         forexRatePublisher.send(rawRateRecord, (recordMetadata, e) -> {
             if(e != null){
-                System.err.printf("ERROR WHILE SENDING RAW RATE TO KAFKA: %s\n",e.getMessage());
+                logger.error("Error sending raw rate to Kafka topic: {}, rate name: {}, error: {}",
+                        rawRateTopic, rawRate.getName(), e.getMessage(), e);
             }
         });
 
@@ -53,6 +60,8 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendCalculatedRate(CalculatedRate calculatedRate){
+        logger.debug("Sending calculated rate to Kafka topic: {}, rate name: {}",
+                calculatedRateTopic, calculatedRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -68,7 +77,8 @@ public class KafkaServiceImpl implements KafkaService {
         );
         forexRatePublisher.send(calculatedRateRecord, (recordMetadata, e) -> {
             if(e != null){
-                System.err.printf("ERROR WHILE SENDING RAW RATE TO KAFKA: %s\n",e.getMessage());
+                logger.error("Error sending calculated rate to Kafka topic: {}, rate name: {}, error: {}",
+                        calculatedRateTopic, calculatedRate.getName(), e.getMessage(), e);
             }
         });
     }

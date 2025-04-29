@@ -61,7 +61,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
     @Override
     public void connect(String platformName) {
-        log.debug("Rest Subscriber::Attempting to connect to platform: {}", platformName);
+        log.info("Rest Subscriber: Attempting to connect to platform: {}", platformName);
         try {
             HttpRequest authRequest = buildAuthRequest();
 
@@ -73,15 +73,15 @@ public class RestSubscriberImpl implements SubscriberService {
                         authResponse.body(),
                         ApiKeyResponse.class
                 ).getApiKey();
-                log.info("Rest Subscriber::Successfully connected to platform: {}. API Key received.", platformName);
+                log.info("Rest Subscriber: Successfully connected to platform: {}. API Key received.", platformName);
                 coordinator.onConnect(platformName, true);
             } else {
-                log.warn("Authentication failed for platform: {}. HTTP status: {}", platformName, authResponse.statusCode());
+                log.warn("Rest Subscriber: Authentication failed for platform: {}. HTTP status: {}", platformName, authResponse.statusCode());
                 coordinator.onConnect(platformName, false);
             }
 
         } catch (IOException | InterruptedException e) {
-            log.warn("Failed to connect to platform: {}.", platformName, e);
+            log.warn("Rest Subscriber: Failed to connect to platform: {}.", platformName, e);
             coordinator.onConnect(platformName, false);
         }
     }
@@ -93,17 +93,17 @@ public class RestSubscriberImpl implements SubscriberService {
         activeSubscriptions.clear();
         this.receivedRates.clear();
         this.apiKey = null;
-        log.info("Rest Subscriber::Disconnected successfully. All subscriptions cleared.");
+        log.info("Rest Subscriber: Disconnected successfully. All subscriptions cleared.");
     }
 
     @Override
     public void subscribe(String platformName, String rateName) {
         if (apiKey == null) {
-            log.warn("Rest Subscriber::Cannot subscribe to rate: {}. API key is null.", rateName);
+            log.warn("Rest Subscriber: Cannot subscribe to rate: {}. API key is null.", rateName);
             return;
         }
         if (activeSubscriptions.containsKey(rateName)) {
-            log.warn("Rest Subscriber::Subscription to rate: {} already exists.", rateName);
+            log.warn("Rest Subscriber: Subscription to rate: {} already exists.", rateName);
             return;
         }
 
@@ -129,7 +129,7 @@ public class RestSubscriberImpl implements SubscriberService {
                 TimeUnit.MILLISECONDS
         );
         activeSubscriptions.put(rateName, scheduledJob);
-        log.info("Rest Subscriber::Subscribed to rate: {} on platform: {}", rateName, platformName);
+        log.info("Rest Subscriber: Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
@@ -138,9 +138,9 @@ public class RestSubscriberImpl implements SubscriberService {
         if (scheduledJob != null) {
             scheduledJob.cancel(false);
             receivedRates.remove(rateName);
-            log.info("Rest Subscriber::Unsubscribed from rate: {} on platform: {}", rateName, platformName);
+            log.info("Rest Subscriber: Unsubscribed from rate: {} on platform: {}", rateName, platformName);
         }else {
-            log.warn("Rest Subscriber::No subscription found for rate: {} on platform: {}", rateName, platformName);
+            log.warn("Rest Subscriber: No subscription found for rate: {} on platform: {}", rateName, platformName);
         }
     }
 
@@ -148,7 +148,7 @@ public class RestSubscriberImpl implements SubscriberService {
     private Runnable createSubscribeJob(String platformName, String rateName, HttpRequest request) {
         return () -> {
             try {
-                log.trace("Rest Subscriber::Fetching rate: {} for platform: {}", rateName, platformName);
+                log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() == 200) {
                     Rate rate = objectMapper.readValue(
@@ -163,22 +163,23 @@ public class RestSubscriberImpl implements SubscriberService {
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
                 } else {
-                    log.warn("Rest Subscriber::Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
+                    log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
                     handleConnectionFailure(platformName);
                 }
             } catch (Exception e){
-                log.error("Rest Subscriber::Error fetching rate: {} from platform: {}. Error: {}", rateName, platformName, e.getMessage(), e);
-                handleConnectionFailure(platformName);
+                log.error("Rest Subscriber: Error fetching rate: {} from platform: {}. Error: {}", rateName, platformName, e.getMessage(), e);
                 if(e instanceof InterruptedException){
                     Thread.currentThread().interrupt();
-                    log.error("Rest Subscriber::Thread is interrupted.");
+                    log.error("Rest Subscriber: Thread is interrupted.");
                 }
+
+                handleConnectionFailure(platformName);
             }
         };
     }
 
     private void handleConnectionFailure(String platformName) {
-        log.warn("Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
+        log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
         activeSubscriptions.values()
                 .forEach(scheduledJob -> scheduledJob.cancel(false));
         activeSubscriptions.clear();

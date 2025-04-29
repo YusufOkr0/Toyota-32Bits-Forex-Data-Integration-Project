@@ -8,8 +8,9 @@ import com.toyota.cache.CacheService;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+
+import org.apache.logging.log4j.Logger;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -22,9 +23,9 @@ import java.util.List;
 
 public class RedisServiceImpl implements CacheService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RedisServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(RedisServiceImpl.class);
 
-    private static final long TTL_IN_SECONDS = 1800L;
+    private static final long TTL_IN_SECONDS = 60L;
     private static final String RAW_RATES_KEY_PREFIX = "RawRates";
     private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates";
 
@@ -42,14 +43,16 @@ public class RedisServiceImpl implements CacheService {
     public void saveRawRate(String platformName, String rateName, Rate rate) {  // RawRates::TCP::USDTRY
 
         String redisKey = RAW_RATES_KEY_PREFIX + "::" + platformName + "::" + rateName;
+
         try (Jedis jedis = jedisPool.getResource()) {
 
             String rateInJson = objectMapper.writeValueAsString(rate);
 
             jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
+            logger.debug("saveRawRate: Successfully saved raw rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("Error when save raw rates to the redis.",e);
+            logger.error("saveRawRate: Error when save raw rates to the redis.",e);
         }
     }
 
@@ -62,9 +65,9 @@ public class RedisServiceImpl implements CacheService {
             String rateInJson = objectMapper.writeValueAsString(rate);
 
             jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
-
+            logger.debug("saveCalculatedRate: Successfully saved calculated rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("Error when save calculated rates to the redis.",e);
+            logger.error("saveCalculatedRate: Error when save calculated rates to the redis.",e);
         }
     }
 
@@ -72,7 +75,9 @@ public class RedisServiceImpl implements CacheService {
     @Override
     public List<Rate> getAllRawRatesByRateName(String rateName) {
         List<Rate> rates = new ArrayList<>();
+
         String pattern = RAW_RATES_KEY_PREFIX + "*::" + rateName;
+        logger.debug("getAllRawRatesByRateName: Fetching raw rates from Redis with pattern: {}", pattern);
 
         try (Jedis jedis = jedisPool.getResource()) {
             String cursor = ScanParams.SCAN_POINTER_START;
@@ -85,27 +90,21 @@ public class RedisServiceImpl implements CacheService {
                     if (json != null) {
                         try {
                             rates.add(objectMapper.readValue(json, Rate.class));
+
                         } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse JSON for key: {}", key, e);
+                            logger.error("getAllRawRatesByRateName: Could not parse JSON for key: {}", key, e);
                         }
                     }
                 }
                 cursor = result.getCursor();
             } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
+            logger.debug("getAllRawRatesByRateName: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
         } catch (JedisConnectionException e) {
-            logger.error("Redis connection error : {}", e.getMessage());
+            logger.error("getAllRawRatesByRateName: Redis connection error : {}", e.getMessage());
         }
-
         return rates;
     }
 
-
-    private void shutdown() {
-        if (jedisPool != null && !jedisPool.isClosed()) {
-            jedisPool.close();
-            logger.debug("Redis connection pool closed.");
-        }
-    }
 
     private JedisPool configureJedisPool() {
 
