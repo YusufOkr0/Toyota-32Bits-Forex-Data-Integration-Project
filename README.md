@@ -1,10 +1,19 @@
 <h1 align="center">Toyota-32bit-Forex-data-Integration-Project</h1>
 
-[![Kafka](https://img.shields.io/badge/Kafka-Message%20Queue-blue.svg)](https://kafka.apache.org/)
-[![Redis](https://img.shields.io/badge/Redis-Data%20Store-red.svg)](https://redis.io/)
-[![Java](https://img.shields.io/badge/Java-Programming%20Language-green.svg)](https://www.oracle.com/java/)
-[![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://www.docker.com/)
-
+<p align="center">
+  <a href="https://kafka.apache.org/">
+    <img src="https://img.shields.io/badge/Kafka-Message%20Queue-blue.svg" alt="Kafka" />
+  </a>
+  <a href="https://redis.io/">
+    <img src="https://img.shields.io/badge/Redis-Data%20Store-red.svg" alt="Redis" />
+  </a>
+  <a href="https://www.oracle.com/java/">
+    <img src="https://img.shields.io/badge/Java-Programming%20Language-green.svg" alt="Java" />
+  </a>
+  <a href="https://www.docker.com/">
+    <img src="https://img.shields.io/badge/Docker-Supported-blue.svg" alt="Docker" />
+  </a>
+</p>
 This project aims to develop a comprehensive Java-based software solution for collecting, integrating, evaluating, and calculating financial data from multiple real-time data providers in global financial markets, with a focus on Forex (foreign exchange) data.
 
 ## **Project Scope**
@@ -30,7 +39,7 @@ The project includes the following components:
 ## **Project Architecture**
 
 <div align="center">
-  <img alt="Project-Architecture2" src="./assets/Project-Architecture-2.png" width="800"/>
+  <img alt="Project-Architecture2" src="./assets/Project-Architecture.png" width="800"/>
 </div>
 
 

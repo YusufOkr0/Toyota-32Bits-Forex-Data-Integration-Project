@@ -9,8 +9,9 @@ import com.toyota.exception.*;
 import com.toyota.service.MailSender;
 import com.toyota.service.RateManager;
 import com.toyota.service.SubscriberService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CoordinatorImpl implements CoordinatorService {
 
-    private static final Logger log = LoggerFactory.getLogger(CoordinatorImpl.class);
+    private static final Logger log = LogManager.getLogger(CoordinatorImpl.class);
     private static final int THREAD_POOL_SIZE = 10;
 
     private final String subscribersConfigFile;

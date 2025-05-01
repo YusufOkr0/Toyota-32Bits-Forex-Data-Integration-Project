@@ -8,8 +8,8 @@ import com.toyota.dtos.response.ApiKeyResponse;
 import com.toyota.entity.Rate;
 import com.toyota.service.CoordinatorService;
 import com.toyota.service.SubscriberService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 
 public class RestSubscriberImpl implements SubscriberService {
 
-    private static final Logger log = LoggerFactory.getLogger(RestSubscriberImpl.class);
+    private static final Logger log = LogManager.getLogger(RestSubscriberImpl.class);
 
     private final long subscriptionDelayMs;
 

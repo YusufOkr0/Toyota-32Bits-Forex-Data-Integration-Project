@@ -21,13 +21,21 @@ public class ForexDataCollector {
 
         CacheService redisService = new RedisServiceImpl(appConfig);
         CalculationService calculationService = new PythonCalculator();
-
         KafkaService kafkaService = new KafkaServiceImpl(appConfig);
-        RateManager rateManager = new RateManagerImpl(kafkaService, redisService, calculationService);
+
+        RateManager rateManager = new RateManagerImpl(
+                kafkaService,
+                redisService,
+                calculationService
+        );
 
         MailSender mailSender = new EmailSenderImpl(appConfig);
 
-        CoordinatorService coordinatorService = new CoordinatorImpl(rateManager,mailSender,appConfig);
+        CoordinatorService coordinatorService = new CoordinatorImpl(
+                rateManager,
+                mailSender,
+                appConfig
+        );
 
     }
 }
