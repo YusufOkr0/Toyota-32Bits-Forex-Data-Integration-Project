@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+
+  ######## DATA REPOSITORIES ########
+
   redis:
     image: redis
     container_name: redis
@@ -11,9 +14,9 @@ services:
     volumes:
       - redis-data:/data
 
-  data-collector-db:
+  postgres-rest-platform:
     image: postgres
-    container_name: data-collector-db
+    container_name: postgres-rest-platform
     ports:
       - "5433:5432"
     environment:
@@ -25,9 +28,9 @@ services:
     volumes:
       - postgres-data-collector:/var/lib/postgresql/data
 
-  rest-provider-db:
+  postgres-kafka:
     image: postgres
-    container_name: rest-provider-db
+    container_name: postgres-kafka
     ports:
       - "5434:5432"
     environment:
@@ -41,30 +44,63 @@ services:
 
 
 
+
+  ######## MY APPLICATIONS ########
+
+  forex-data-collector:
+    image: yusufokr0/forex-data-collector:1.0.0
+    container_name: forex-data-collector
+    environment:
+      EXCHANGE_RATES: USDTRY,EURUSD,GBPUSD
+      TCP_PLATFORM_HOST: tcp-data-provider-app
+      TCP_PLATFORM_PORT: 8090
+      TCP_PLATFORM_USERNAME: admin
+      TCP_PLATFORM_PASSWORD: admin
+      REST_PLATFORM_BASE_URL: http://rest-data-provider-app:8092
+      REST_PLATFORM_USERNAME: YusufOkr0
+      REST_PLATFORM_PASSWORD: YusufOkr0
+      SUBSCRIPTION_DELAY_MS: 5000
+      CONNECTION_RETRY_LIMIT: 10
+      RETRY_DELAY_SECONDS: 6
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_TOPIC_RAW: raw-rates
+      KAFKA_TOPIC_CALCULATED: calculated-rates
+    volumes:
+      - main-app-log:/forex-data-collector/logs
+    networks:
+      - forex-net
+    depends_on:
+      - kafka
+      - redis
+
+
+
   tcp-data-provider:
     image: yusufokr0/tcp-data-provider:1.0.0
-    container_name: tcp_data_provider_app
+    container_name: tcp-data-provider-app
     ports:
       - "8090:8090"
     environment:
       - SERVER_PORT=8090
       - CURRENCY_PAIRS=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
-      - TCP_USDTRY_BID=37.9973
-      - TCP_USDTRY_ASK=38.0333
-      - TCP_USDTRY_MIN_LIMIT=35.2134
+      - TCP_USDTRY_BID=38.4426
+      - TCP_USDTRY_ASK=38.8584
+      - TCP_USDTRY_MIN_LIMIT=36.5134
       - TCP_USDTRY_MAX_LIMIT=40.1324
-      - TCP_EURUSD_BID=1.0848
-      - TCP_EURUSD_ASK=1.0949
-      - TCP_EURUSD_MIN_LIMIT=1.01254
-      - TCP_EURUSD_MAX_LIMIT=1.21423
-      - TCP_GBPUSD_BID=1.295
-      - TCP_GBPUSD_ASK=1.395
-      - TCP_GBPUSD_MIN_LIMIT=1.11245
+      - TCP_EURUSD_BID=1.1266
+      - TCP_EURUSD_ASK=1.1569
+      - TCP_EURUSD_MIN_LIMIT=1.02254
+      - TCP_EURUSD_MAX_LIMIT=1.22423
+      - TCP_GBPUSD_BID=1.3273
+      - TCP_GBPUSD_ASK=1.3573
+      - TCP_GBPUSD_MIN_LIMIT=1.22245
       - TCP_GBPUSD_MAX_LIMIT=1.42142
-      - PUBLISH_FREQUENCY=10000
-      - USER_CREDENTIALS=user|pass,admin|admin
+      - PUBLISH_FREQUENCY=5000
+      - USER_CREDENTIALS=user|pass,admin|admin,32bit|aloha,
       - SPIKE_INTERVAL=10
-      - TOYOTA_LOG_LEVEL=TRACE
+      - LOG_LEVEL_TOYOTA=TRACE
     networks:
       - forex-net
     volumes:
@@ -77,10 +113,10 @@ services:
     ports:
       - "8092:8092"
     environment:
-      DATABASE_URL: jdbc:postgresql://rest-provider-db:5432/rest_provider_db
+      DATABASE_URL: jdbc:postgresql://postgres-rest-platform:5432/rest_provider_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       REDIS_CUSTOM_HOST: redis
       REDIS_CUSTOM_PORT: 6379
       MINIMUM_RATE_CHANGE: 0.001
@@ -99,7 +135,7 @@ services:
       - redis
     volumes:
       - rest-platform-log:/rest-data-provider/logs
-      #- ./external-config/rest-platform/application.yml:/app/config/application.yml
+      #- ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
 
 
 
@@ -107,16 +143,16 @@ services:
     image: yusufokr0/kafka-db-consumer:1.0.0
     container_name: kafka-db-consumer
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://data-collector-db:5432/forex_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-kafka:5432/forex_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
       KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
       KAFKA_CUSTOM_CONSUMER_RAW_GROUP_ID: raw-rates-group
       KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC: calculated-rates
       KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID: calculated-rates-group
-      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: latest
+      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
     networks:
       - forex-net
     depends_on:
@@ -126,6 +162,7 @@ services:
 
 
 
+  ######## KAFKA COMPONENTS ########
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -178,16 +215,20 @@ services:
 
 
 
+  ######## LOG PIPELINE ########
+
+
   filebeat:
     image: docker.elastic.co/beats/filebeat-oss:7.12.1
-    entrypoint: "filebeat -e -strict.perms=false"
+    entrypoint: "filebeat -e -strict.perms=false"   # bypass config file permission check.
     container_name: filebeat
     user: root
     volumes:
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
-      - ./forex-data-collector/logs/forex-data-collector.log:/var/log/main-app/main-app.log
+      - ./forex-data-collector/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - main-app-log:/var/log/main-app:ro  # only readable
     depends_on:
       - logstash
+      - forex-data-collector
     networks:
       - logging-network
 
@@ -200,7 +241,7 @@ services:
     ports:
       - "5044:5044"
     volumes:
-      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./forex-data-collector/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     depends_on:
       - opensearch
     networks:
@@ -245,6 +286,7 @@ volumes:
   postgres-rest-provider:
   rest-platform-log:
   tcp-platform-log:
+  main-app-log:
 
 networks:
   logging-network:

@@ -8,12 +8,15 @@
         <Property name="rollingMaxFiles">7</Property>
         <Property name="deleteMaxAge">P30D</Property>
 
+<!--        <Property name="filePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable</Property>-->
+
         <Property name="consoleHighlightPattern">
             %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red bold, ERROR=red, WARN=yellow, INFO=green,
             DEBUG=blue, TRACE=magenta} - [%t] %style{%c{1.}}{cyan} - %msg%n%throwable
         </Property>
 
     </Properties>
+
 
     <Appenders>
         <Console name="ConsoleAppender" target="SYSTEM_OUT">
@@ -24,7 +27,10 @@
                      fileName="${logDir}/forex-data-collector.log"
                      filePattern="${logDir}/archive/forex-data-collector-%d{yyyy-MM-dd}-%i.log.gz">
 
-            <JsonLayout eventEol="true" compact="true" includeStacktrace="true" includeTimeMillis="true"/>
+            <!--<PatternLayout pattern="${filePattern}"/>-->
+
+            <JsonLayout eventEol="true" compact="true"
+                        includeStacktrace="false" includeTimeMillis="true"/>
 
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
@@ -44,12 +50,12 @@
     </Appenders>
 
     <Loggers>
-        <Root level="INFO">
+        <Root level="${env:LOG_LEVEL_ROOT:-INFO}">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Root>
 
-        <Logger name="com.toyota" level="TRACE" additivity="false">
+        <Logger name="com.toyota" level="${env:LOG_LEVEL_TOYOTA:-INFO}" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>

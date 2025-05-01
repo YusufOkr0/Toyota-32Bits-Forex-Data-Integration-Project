@@ -181,7 +181,6 @@ public class PythonCalculator implements CalculationService {
         logger.trace("Creating new GraalVM context for Python execution.");
 
         Context context = Context.newBuilder(LANGUAGE_NAME)
-                .option("engine.WarnInterpreterOnly", "false")
                 .allowAllAccess(true)
                 .build();
         context.eval(source);

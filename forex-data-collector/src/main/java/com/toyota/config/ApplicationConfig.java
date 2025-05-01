@@ -51,7 +51,7 @@ public class ApplicationConfig {
     }
 
     public List<String> getExchangeRates() {
-        String exchangeRates = properties.getProperty("exchange.rates");
+        String exchangeRates = getValue("exchange.rates");
         if (exchangeRates != null && !exchangeRates.isBlank()) {
             return Arrays.asList(exchangeRates.split(","));
         }
