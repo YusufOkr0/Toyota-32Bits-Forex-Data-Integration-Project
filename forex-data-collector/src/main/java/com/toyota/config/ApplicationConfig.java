@@ -8,6 +8,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
+
+/**
+ * Singleton configuration loader that reads application settings from a properties file.
+ * <p>
+ * Configuration values can be overridden by environment variables using an uppercase format
+ * with dots replaced by underscores. For example, the property key {@code exchange.rates}
+ * can be overridden by the environment variable {@code EXCHANGE_RATES}.
+ * </p>
+ *
+ * <p>
+ * The default configuration file is {@code application.properties} and it must be located in the classpath.
+ * </p>
+ */
 public class ApplicationConfig {
 
     private static final String CONFIG_FILE_NAME = "application.properties";

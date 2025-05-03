@@ -95,7 +95,7 @@ public class PythonCalculator implements CalculationService {
     }
 
     @Override
-    public CalculatedRate calculateRateDependentOnUsdTry(String rateName, String usdMid, List<String> cachedBids, List<String> cachedAsk) {
+    public CalculatedRate calculateRateDependentOnUsdTry(String rateName, String usdMid, List<String> cachedBids, List<String> cachedAsks) {
         logger.debug("PythonCalculator: Calculating rate dependent on USD/TRY. Rate name: {}, USD mid: {}", rateName, usdMid);
         try {
             Context context = contextHolder.get();
@@ -107,7 +107,7 @@ public class PythonCalculator implements CalculationService {
             Value result = function.execute(
                     usdMid,
                     cachedBids,
-                    cachedAsk
+                    cachedAsks
             );
 
             String rate_bid = result.getArrayElement(0).asString();
