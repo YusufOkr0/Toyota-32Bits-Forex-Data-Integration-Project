@@ -17,7 +17,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * A non-blocking TCP server using Java NIO (`Selector`, `Channels`) to handle
+ * client connections for a simulated Forex (FX) data service.
+ * <p>
+ * This server listens on a specified port, accepts multiple client connections,
+ * authenticates users via an {@link AuthService}, manages client subscriptions
+ * to specific currency pairs, and processes commands (`connect`, `disconnect`,
+ * `subscribe`, `unsubscribe`) received from clients.
+ * </p>
+ */
 public class FxDataServer {
 
     private static final String ERROR_NOT_CONNECTED = "ERROR|Not Authenticated";
@@ -54,6 +63,12 @@ public class FxDataServer {
     }
 
 
+    /**
+     * Starts the server's main loop.
+     * Initializes the {@link ServerSocketChannel}, binds it to the configured port,
+     * registers it with the {@link Selector}, and enters a loop processing I/O events
+     * (accepting connections, reading client messages).
+     */
     public void startServer() {
         logger.trace("startServer method begins.");
         try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
@@ -101,6 +116,14 @@ public class FxDataServer {
         logger.trace("startServer method finished.");
     }
 
+
+    /**
+     * Handles an incoming connection request (OP_ACCEPT event).
+     * Accepts the new client connection, configures it for non-blocking mode,
+     * and registers it with the selector to listen for read events (OP_READ).
+     *
+     * @param serverChannel The server socket channel that accepted the connection.
+     */
     private void handleConnectionRequest(ServerSocketChannel serverChannel) {
         logger.trace("handleConnectionRequest method called.");
         try {
@@ -109,7 +132,7 @@ public class FxDataServer {
                 clientChannel.configureBlocking(false);
                 clientChannel.register(selector, SelectionKey.OP_READ);
 
-                logger.info("Client connected: {}", clientChannel.getRemoteAddress());
+                logger.info("Client connected: {}", getClientAddressSafe(clientChannel));
             }
         } catch (IOException e) {
             logger.error("IOException while handling connection request: {}", e.getMessage(), e);
@@ -118,6 +141,15 @@ public class FxDataServer {
     }
 
 
+
+    /**
+     * Handles incoming messages from a client (OP_READ event).
+     * Reads data from the client's channel, decodes it, splits into potential
+     * commands, and passes each command to {@link #validateMessageAndTakeAction(SocketChannel, String)}.
+     * Handles client disconnection if read returns -1 or an IOException occurs.
+     *
+     * @param key The {@link SelectionKey} associated with the readable client channel.
+     */
     private void handleClientMessage(SelectionKey key) {
         logger.trace("handleClientMessage method called.");
         try {
@@ -127,7 +159,7 @@ public class FxDataServer {
 
             if (bytesRead == -1) {
                 shutDownClient(key);
-                logger.info("Client {} disconnected gracefully (read returned -1).", clientChannel.getRemoteAddress());
+                logger.info("Client {} disconnected gracefully (read returned -1).", getClientAddressSafe(clientChannel));
             } else if (bytesRead > 0) {
                 buffer.flip();
                 byte[] byteData = new byte[buffer.remaining()];
@@ -137,7 +169,7 @@ public class FxDataServer {
                         .split("\r\n");
 
                 for (String message : clientMessage) {
-                    logger.debug("Received message from client {}: {}", clientChannel.getRemoteAddress(), message);
+                    logger.debug("Received message from client {}: {}", getClientAddressSafe(clientChannel), message);
                     validateMessageAndTakeAction(clientChannel, message);
                 }
 
@@ -150,6 +182,15 @@ public class FxDataServer {
         logger.trace("handleClientMessage method finished.");
     }
 
+
+    /**
+     * Parses a received message string, identifies the command, and delegates
+     * processing to the appropriate handler method (handleConnect, handleSubscribe, etc.).
+     * Sends an error message back to the client if the command is unrecognized.
+     *
+     * @param clientChannel The channel from which the message was received.
+     * @param message       The raw message string received from the client.
+     */
     private void validateMessageAndTakeAction(SocketChannel clientChannel, String message) {
         logger.trace("validateMessageAndTakeAction method called for message: {}", message);
 
@@ -183,6 +224,12 @@ public class FxDataServer {
     }
 
 
+
+    /**
+     * Handles the "subscribe" command. Validates arguments, checks authentication,
+     * checks if the currency pair is valid, and adds the client channel to the
+     * subscription set for that pair. Sends appropriate success/info/error messages.
+     */
     private void handleSubscribe(SocketChannel clientChannel, String[] messageParts) {
         logger.trace("handleSubscribe method called.");
 
@@ -222,6 +269,11 @@ public class FxDataServer {
     }
 
 
+    /**
+     * Handles the "unsubscribe" command. Validates arguments, checks authentication,
+     * checks if the currency pair is valid, and removes the client channel from the
+     * subscription set for that pair. Sends appropriate success/info/error messages.
+     */
     private void handleUnsubscribe(SocketChannel clientChannel, String[] messageParts) {
         logger.trace("handleUnsubscribe method called.");
 
@@ -259,6 +311,13 @@ public class FxDataServer {
     }
 
 
+
+    /**
+     * Handles the "connect" command. Validates arguments, checks if the client is already
+     * authenticated or if the username has an existing session from another channel.
+     * Uses {@link AuthService} to validate credentials and creates a session if successful.
+     * Sends appropriate success/info/error messages.
+     */
     private void handleConnect(SocketChannel clientChannel, String[] messageParts) {
         logger.trace("handleConnect method called.");
 
@@ -299,12 +358,13 @@ public class FxDataServer {
     }
 
 
-    /***
-     * Abonelikleri sonlandir.
-     * Client'disconnect et. Session da kapatilir.
-     * Socket'in Key'i ni iptal et.
-     * Socket'i kapat
-     * @param key
+    /**
+     * Cleans up resources associated with a client connection.
+     * Removes the client from all subscription lists, disconnects the session
+     * in the {@link AuthService}, cancels the {@link SelectionKey}, and closes
+     * the {@link SocketChannel}.
+     *
+     * @param key The SelectionKey associated with the client to shut down.
      */
     private void shutDownClient(SelectionKey key) {
         logger.trace("shutDownClient method called.");

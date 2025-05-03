@@ -5,20 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4e455f4-068c-430c-83b9-32abe5b0ac82" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../filebeat.yml" beforeDir="false" afterPath="$PROJECT_DIR$/filebeat.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/ForexDataCollector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/ForexDataCollector.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logstash.conf" beforeDir="false" afterPath="$PROJECT_DIR$/logstash.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/calculation/Impl/PythonCalculator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/calculation/Impl/PythonCalculator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/publisher/Impl/KafkaServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/publisher/Impl/KafkaServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/RateManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/RateManager.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/log4j2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/log4j2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../logstash/pipeline/logstash.conf" beforeDir="false" afterPath="$PROJECT_DIR$/logstash.conf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,6 +73,7 @@
       <workItem from="1746093870463" duration="1637000" />
       <workItem from="1746096670889" duration="265000" />
       <workItem from="1746107112680" duration="37000" />
+      <workItem from="1746265939863" duration="908000" />
     </task>
     <servers />
   </component>

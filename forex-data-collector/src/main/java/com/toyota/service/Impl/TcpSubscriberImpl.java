@@ -77,7 +77,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             }
 
         } catch (IOException e) {
-            log.warn("Tcp Subscriber: Connection attempt to {} failed.",platformName,e);
+            log.warn("Tcp Subscriber: Connection attempt to {} failed. Exception Message: {}.",platformName,e.getMessage());
             closeResources();
             coordinator.onConnect(platformName, false);
         }
@@ -155,7 +155,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (writer != null) writer.close();
             if (socket != null) socket.close();
         } catch (IOException e) {
-            log.error("Tcp Subscriber: Error closing connection:{} ",e.getMessage(),e);
+            log.error("Tcp Subscriber: Error closing connection: {} ",e.getMessage());
         } finally {
             socket = null;
             reader = null;

@@ -79,7 +79,7 @@ public class EmailSenderImpl implements MailSender {
 
         } catch (MessagingException e) {
             log.error("Failed to send connection failure notification email for platform '{}' to recipients '{}'. Error: {}",
-                    platformName, recipientsTo, e.getMessage(), e);
+                    platformName, recipientsTo, e.getMessage());
         }
     }
 
@@ -88,45 +88,57 @@ public class EmailSenderImpl implements MailSender {
         <!DOCTYPE html>
         <html>
         <head>
-        <title>CRITICAL ALERT: Platform Connection Failure</title>
+        <title>ALERT: Persistent Platform Connection Failures</title>
         <style>
           body { font-family: sans-serif; line-height: 1.6; }
-          .container { padding: 20px; border: 1px solid #ddd; max-width: 600px; margin: 20px auto; }
-          .header { background-color: #d9534f; color: white; padding: 10px 15px; text-align: center; border-radius: 3px 3px 0 0; }
+          .container { padding: 20px; border: 1px solid #ddd; max-width: 600px; margin: 20px auto; background-color: #fff; }
+          /* --- Header Background Color Changed to Red --- */
+          .header { background-color: #d9534f; /* Red for Alert Emphasis */ color: white; padding: 10px 15px; text-align: center; border-radius: 3px 3px 0 0; }
+          .header h1 { margin: 0; font-size: 1.5em; }
           .details { margin-top: 20px; padding: 0 15px; }
-          .details strong { display: inline-block; min-width: 180px; color: #555;}
-          .platform-name { font-weight: bold; color: #c9302c; }
-          .impact { margin-top: 20px; padding: 15px; background-color: #fcf8e3; border: 1px solid #faebcc; color: #8a6d3b; border-radius: 3px; }
+          .details p { margin: 10px 0; }
+          .details strong { display: inline-block; min-width: 200px; color: #333; font-weight: bold; }
+          .platform-name { font-weight: bold; color: #d9534f; } /* Keep red for platform name emphasis */
+          .status { margin-top: 15px; padding: 10px; background-color: #fcf8e3; border: 1px solid #faebcc; color: #8a6d3b; border-radius: 3px; font-weight: bold; text-align: center; }
+          .impact { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border: 1px solid #eee; color: #555; border-radius: 3px; }
+          .impact strong { color: #333; }
           .action { margin-top: 20px; padding: 0 15px; }
-          .action ul { padding-left: 20px; }
+          .action ul { padding-left: 20px; margin-top: 5px; }
           .footer { margin-top: 25px; font-size: 0.85em; text-align: center; color: #777; padding-top: 15px; border-top: 1px solid #eee;}
         </style>
         </head>
         <body>
         <div class="container">
-          <div class="header">
-            <h1>CRITICAL CONNECTION FAILURE</h1>
+          <div class="header"> <!-- This div now has the red background -->
+            <h1>PERSISTENT CONNECTION FAILURES</h1>
           </div>
           <div class="details">
             <p>Dear Administrator,</p>
-            <p>The Forex Data Collection Service has reached the maximum retry limit while attempting to connect to the following platform and has <strong>halted further attempts</strong></p>
-            <p><strong>Failed Platform:</strong> <span class="platform-name">%s</span></p>
-            <p><strong>Maximum Retry Count:</strong> %d</p>
-            <p><strong>Retry Delay:</strong> %d seconds</p>
-            <p><strong>Failure Timestamp:</strong> %s</p>
+            <p>The Forex Data Collection Service is encountering persistent difficulties connecting to the following platform:</p>
+            <p><strong>Affected Platform:</strong> <span class="platform-name">%s</span></p>
+            <p>The service reached the configured retry limit after multiple unsuccessful attempts.</p>
+            <p><strong>Retry Limit Reached:</strong> %d attempts</p>
+            <p><strong>Delay Between Attempts:</strong> %d seconds</p>
+            <p><strong>Notification Timestamp:</strong> %s</p>
+          </div>
+          <div class="status">
+             ATTENTION: The service has logged this failure and will **continue attempting to connect** periodically. This notification indicates an ongoing problem requiring investigation.
           </div>
           <div class="impact">
-            <strong>Impact:</strong> Live exchange rate data from this platform will not be available to our system until the issue is resolved. This may affect currency calculations and related operations.
+             <strong>Impact:</strong> The recurring inability to establish a connection with the '<span class="platform-name">%s</span>' platform means that <strong>live exchange rate data from this source is currently not being received.</strong> This complete interruption directly affects the accuracy and timeliness of all dependent calculations, reports, and operations that rely on this data feed. The persistence of these failures strongly indicates an underlying issue (e.g., with the platform itself, network connectivity, or configuration) that requires investigation to restore the critical data flow.
           </div>
           <div class="action">
-            <p><strong>Please Take Immediate Action:</strong></p>
+            <p><strong>Recommended Investigation Steps:</strong></p>
             <ul>
-              <li>Check the status of the '%s' platform (Is the service running?).</li>
-              <li>Review the application logs (especially 'CoordinatorImpl' and related subscriber logs) in detail.</li>
+              <li>Verify the operational status and accessibility of the '<span class="platform-name">%s</span>' platform externally.</li>
+              <li>Check network connectivity (firewalls, routing) between the application server and the platform.</li>
+              <li>Review application logs (especially 'CoordinatorImpl' and subscriber logs for '<span class="platform-name">%s</span>') around the time of failure for specific error messages (e.g., connection refused, timeout, authentication errors).</li>
+              <li>Confirm authentication credentials for the platform are correct, if applicable.</li>
+              <li>Monitor the frequency of these alerts to understand the persistence of the problem.</li>
             </ul>
           </div>
           <div class="footer">
-              This is an automated alert message. Please do not reply.
+              This is an automated alert generated by the Forex Data Collection Service. Please do not reply directly to this email.
           </div>
         </div>
         </body>
@@ -136,6 +148,8 @@ public class EmailSenderImpl implements MailSender {
                 limit,
                 delay,
                 timestamp,
+                platformName,
+                platformName,
                 platformName
         );
     }

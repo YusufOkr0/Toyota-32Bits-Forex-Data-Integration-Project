@@ -16,7 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+/**
+ * Manages the periodic broadcasting of simulated Forex (FX) rate updates to subscribed clients.
+ * It simulates rate fluctuations, including occasional spikes, based on configured parameters
+ * and sends formatted messages over {@link SocketChannel} connections.
+ */
 public class FxDataPublisher {
 
     private final BigDecimal MAXIMUM_RATE_CHANGE;
