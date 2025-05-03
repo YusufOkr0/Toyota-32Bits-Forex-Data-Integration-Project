@@ -14,9 +14,9 @@ services:
     volumes:
       - redis-data:/data
 
-  postgres-rest-platform:
+  postgres-kafka:
     image: postgres
-    container_name: postgres-rest-platform
+    container_name: postgres-kafka
     ports:
       - "5433:5432"
     environment:
@@ -28,9 +28,9 @@ services:
     volumes:
       - postgres-data-collector:/var/lib/postgresql/data
 
-  postgres-kafka:
+  postgres-rest-platform:
     image: postgres
-    container_name: postgres-kafka
+    container_name: postgres-rest-platform
     ports:
       - "5434:5432"
     environment:
@@ -68,12 +68,16 @@ services:
       KAFKA_TOPIC_RAW: raw-rates
       KAFKA_TOPIC_CALCULATED: calculated-rates
     volumes:
-      - main-app-log:/forex-data-collector/logs
+      - main-app-log:/app/forex-data-collector/logs
     networks:
       - forex-net
     depends_on:
       - kafka
       - redis
+      - tcp-data-provider
+      - rest-data-provider
+
+
 
 
 
@@ -98,13 +102,13 @@ services:
       - TCP_GBPUSD_MIN_LIMIT=1.22245
       - TCP_GBPUSD_MAX_LIMIT=1.42142
       - PUBLISH_FREQUENCY=5000
-      - USER_CREDENTIALS=user|pass,admin|admin,32bit|aloha,
+      - USER_CREDENTIALS=user|pass,admin|admin,32bit|aloha,user1|pass1
       - SPIKE_INTERVAL=10
       - LOG_LEVEL_TOYOTA=TRACE
     networks:
       - forex-net
     volumes:
-      - tcp-platform-log:/tcp-data-provider/logs
+      - tcp-platform-log:/app/tcp-data-provider/logs
 
 
   rest-data-provider:
@@ -131,10 +135,10 @@ services:
     networks:
       - forex-net
     depends_on:
-      - rest-provider-db
+      - postgres-rest-platform
       - redis
     volumes:
-      - rest-platform-log:/rest-data-provider/logs
+      - rest-platform-log:/app/rest-data-provider/logs
       #- ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
 
 
@@ -157,7 +161,7 @@ services:
       - forex-net
     depends_on:
       - kafka
-      - data-collector-db
+      - postgres-kafka
 
 
 
@@ -230,7 +234,7 @@ services:
       - logstash
       - forex-data-collector
     networks:
-      - logging-network
+      - forex-net
 
 
 
@@ -245,7 +249,7 @@ services:
     depends_on:
       - opensearch
     networks:
-      - logging-network
+      - forex-net
 
   opensearch:
     image: opensearchproject/opensearch:latest
@@ -259,7 +263,7 @@ services:
       - "9200:9200" # OpenSearch API
       - "9600:9600" # Performans izleme
     networks:
-      - logging-network
+      - forex-net
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
@@ -274,7 +278,7 @@ services:
     depends_on:
       - opensearch
     networks:
-      - logging-network
+      - forex-net
 
 
 volumes:
@@ -289,7 +293,5 @@ volumes:
   main-app-log:
 
 networks:
-  logging-network:
-    driver: bridge
   forex-net:
     driver: bridge

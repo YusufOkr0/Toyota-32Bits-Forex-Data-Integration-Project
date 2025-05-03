@@ -80,8 +80,8 @@ public class RestSubscriberImpl implements SubscriberService {
                 coordinator.onConnect(platformName, false);
             }
 
-        } catch (IOException | InterruptedException e) {
-            log.warn("Rest Subscriber: Failed to connect to platform: {}.", platformName, e);
+        } catch (Exception e) {
+            log.warn("Rest Subscriber: Failed to connect to platform: {} Exception Message: {}.", platformName, e.getMessage());
             coordinator.onConnect(platformName, false);
         }
     }
@@ -167,7 +167,7 @@ public class RestSubscriberImpl implements SubscriberService {
                     handleConnectionFailure(platformName);
                 }
             } catch (Exception e){
-                log.error("Rest Subscriber: Error fetching rate: {} from platform: {}. Error: {}", rateName, platformName, e.getMessage(), e);
+                log.error("Rest Subscriber: Error fetching rate: {} from platform: {}. Exception Message: {}", rateName, platformName, e.getMessage());
                 if(e instanceof InterruptedException){
                     Thread.currentThread().interrupt();
                     log.error("Rest Subscriber: Thread is interrupted.");

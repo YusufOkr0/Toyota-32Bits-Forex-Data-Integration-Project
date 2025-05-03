@@ -79,7 +79,7 @@ public class EmailSenderImpl implements MailSender {
 
         } catch (MessagingException e) {
             log.error("Failed to send connection failure notification email for platform '{}' to recipients '{}'. Error: {}",
-                    platformName, recipientsTo, e.getMessage(), e);
+                    platformName, recipientsTo, e.getMessage());
         }
     }
 

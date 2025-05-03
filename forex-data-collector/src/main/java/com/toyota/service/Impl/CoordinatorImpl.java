@@ -74,8 +74,8 @@ public class CoordinatorImpl implements CoordinatorService {
     @Override
     public void onConnect(String platformName, Boolean status) {
         executorService.execute(() -> {
-            log.info("Coordinator: Platform '{}' connection status: {}", platformName, status ? "CONNECTED" : "FAILED");
             if (status) {
+                log.info("Coordinator: Platform '{}' connection status: {}", platformName, "CONNECTED");
 
                 retryCounts.put(platformName, 0);
                 SubscriberService subscriber = subscribers.get(platformName);
@@ -88,6 +88,7 @@ public class CoordinatorImpl implements CoordinatorService {
                 }
 
             } else {
+                log.error("Coordinator: Platform '{}' connection status: {}", platformName, "FAILED");
                 retryToConnectWithDelay(platformName);
             }
         });

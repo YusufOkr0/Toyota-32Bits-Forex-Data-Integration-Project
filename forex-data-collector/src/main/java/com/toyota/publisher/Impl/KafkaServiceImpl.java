@@ -35,7 +35,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendRawRate(Rate rawRate){
-        logger.debug("Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
+        logger.info("KafkaServiceImpl: Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -51,7 +51,7 @@ public class KafkaServiceImpl implements KafkaService {
         );
         forexRatePublisher.send(rawRateRecord, (recordMetadata, e) -> {
             if(e != null){
-                logger.error("Error sending raw rate to Kafka topic: {}, rate name: {}, error: {}",
+                logger.error("KafkaServiceImpl: Error sending raw rate to Kafka topic: {}, rate name: {}, error: {}",
                         rawRateTopic, rawRate.getName(), e.getMessage(), e);
             }
         });
@@ -60,8 +60,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendCalculatedRate(CalculatedRate calculatedRate){
-        logger.debug("Sending calculated rate to Kafka topic: {}, rate name: {}",
-                calculatedRateTopic, calculatedRate.getName());
+        logger.info("KafkaServiceImpl: Sending calculated rate to Kafka topic: {}, rate name: {}", calculatedRateTopic, calculatedRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -77,7 +76,7 @@ public class KafkaServiceImpl implements KafkaService {
         );
         forexRatePublisher.send(calculatedRateRecord, (recordMetadata, e) -> {
             if(e != null){
-                logger.error("Error sending calculated rate to Kafka topic: {}, rate name: {}, error: {}",
+                logger.error("KafkaServiceImpl: Error sending calculated rate to Kafka topic: {}, rate name: {}, error: {}",
                         calculatedRateTopic, calculatedRate.getName(), e.getMessage(), e);
             }
         });
