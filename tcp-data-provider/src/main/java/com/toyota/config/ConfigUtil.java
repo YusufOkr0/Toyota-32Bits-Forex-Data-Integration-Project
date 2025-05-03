@@ -4,6 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+/**
+ * Utility class for loading and accessing configuration properties.
+ * It reads settings from a file named 'application.properties' located in the classpath.
+ * It also supports overriding properties with environment variables. Environment variables
+ * are checked first, using an uppercase, underscore-separated version of the property key
+ * (e.g., 'database.url' becomes 'DATABASE_URL').
+ */
 public class ConfigUtil {
 
     private static final String CONFIG_FILE_NAME = "application.properties";
