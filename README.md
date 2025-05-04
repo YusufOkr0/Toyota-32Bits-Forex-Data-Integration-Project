@@ -13,6 +13,9 @@
   <a href="https://www.docker.com/">
     <img src="https://img.shields.io/badge/Docker-Supported-blue.svg" alt="Docker" />
   </a>
+  <a href="https://www.postgresql.org/">
+    <img src="https://img.shields.io/badge/PostgreSQL-Database-blue.svg" />
+  </a>
 </p>
 
 This project aims to develop a comprehensive Java-based software solution for collecting, integrating, evaluating, and calculating financial data from multiple real-time data providers in global financial markets, with a focus on Forex (foreign exchange) data.

@@ -118,7 +118,12 @@ public class PythonCalculator implements CalculationService {
 
             logger.debug("PythonCalculator: Dependent rate: {} calculated successfully. Bid: {}, Ask: {}",rateName, bid, ask);
 
-            return buildCalculatedRate(rateName,bid,ask);
+            return new CalculatedRate(
+                    rateName,
+                    bid,
+                    ask,
+                    LocalDateTime.now()
+            );
 
         } catch (Exception e) {
             logger.error("PythonCalculator: Failed to calculate rate dependent on USD/TRY. Details: {}", e.getMessage(), e);
@@ -154,24 +159,6 @@ public class PythonCalculator implements CalculationService {
         }
     }
 
-
-    private CalculatedRate buildCalculatedRate(String rateName,BigDecimal bid,BigDecimal ask){
-
-        String derivedRateName = switch (rateName) {
-            case "EURUSD" -> "EURTRY";
-            case "GBPUSD" -> "GBPTRY";
-            default -> "unknown_rate";
-        };
-
-        logger.debug("PythonCalculator: Building CalculatedRate. Base rate: {}, Derived rate: {}",rateName, derivedRateName);
-
-        return new CalculatedRate(
-                derivedRateName,
-                bid,
-                ask,
-                LocalDateTime.now()
-        );
-    }
 
 
 

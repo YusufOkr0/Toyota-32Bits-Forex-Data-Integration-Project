@@ -6,15 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="f4e455f4-068c-430c-83b9-32abe5b0ac82" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logstash.conf" beforeDir="false" afterPath="$PROJECT_DIR$/logstash.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/calculation/Impl/PythonCalculator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/calculation/Impl/PythonCalculator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/publisher/Impl/KafkaServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/publisher/Impl/KafkaServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,26 +26,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.ForexDataCollector.executor&quot;: &quot;Run&quot;,
-    &quot;Maven.Forex-data-collector [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.Forex-data-collector [package].executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/open-search&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project/forex-data-collector&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.ForexDataCollector.executor": "Run",
+    "Maven.Forex-data-collector [clean].executor": "Run",
+    "Maven.Forex-data-collector [package].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "system-wide-refactor",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project/forex-data-collector",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.0",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -74,6 +68,8 @@
       <workItem from="1746096670889" duration="265000" />
       <workItem from="1746107112680" duration="37000" />
       <workItem from="1746265939863" duration="908000" />
+      <workItem from="1746352410881" duration="60000" />
+      <workItem from="1746366572357" duration="51000" />
     </task>
     <servers />
   </component>

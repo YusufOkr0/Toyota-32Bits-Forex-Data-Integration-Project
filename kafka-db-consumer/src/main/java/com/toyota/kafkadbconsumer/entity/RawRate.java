@@ -23,10 +23,10 @@ public class RawRate {
     @Column(name = "rate_name")
     private String name;
 
-    @Column(name = "bid")
+    @Column(name = "bid", precision = 20, scale = 16)
     private BigDecimal bid;
 
-    @Column(name = "ask")
+    @Column(name = "ask", precision = 20, scale = 16)
     private BigDecimal ask;
 
     @Column(name = "rate_update_time")

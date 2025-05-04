@@ -147,8 +147,14 @@ public class RateManagerImpl implements RateManager {
                 cachedUsdTryAsks
         );
 
+        String derivedRate = switch (updatedRateName) {
+            case "EURUSD" -> "EURTRY";
+            case "GBPUSD" -> "GBPTRY";
+            default -> "unknown_rate";
+        };
+
         CalculatedRate calculatedRate = calculationService.calculateRateDependentOnUsdTry(
-                updatedRateName,
+                derivedRate,
                 usdTryMid.toPlainString(),
                 cachedBids,
                 cachedAsks
@@ -156,9 +162,10 @@ public class RateManagerImpl implements RateManager {
         log.debug("RateManagerImpl: Calculated dependent rate: {}", calculatedRate);
 
         redisService.saveCalculatedRate(
-                updatedRateName,
+                derivedRate,
                 calculatedRate
         );
+
         kafkaService.sendCalculatedRate(calculatedRate);
     }
 
