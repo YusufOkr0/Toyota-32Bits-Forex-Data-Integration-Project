@@ -48,7 +48,7 @@ services:
   ######## MY APPLICATIONS ########
 
   forex-data-collector:
-    image: yusufokr0/forex-data-collector:1.0.0
+    image: yusufokr0/forex-data-collector:1.0.2
     container_name: forex-data-collector
     environment:
       EXCHANGE_RATES: USDTRY,EURUSD,GBPUSD
@@ -59,7 +59,7 @@ services:
       REST_PLATFORM_BASE_URL: http://rest-data-provider-app:8092
       REST_PLATFORM_USERNAME: YusufOkr0
       REST_PLATFORM_PASSWORD: YusufOkr0
-      SUBSCRIPTION_DELAY_MS: 5000
+      SUBSCRIPTION_DELAY_MS: 7000
       CONNECTION_RETRY_LIMIT: 10
       RETRY_DELAY_SECONDS: 6
       REDIS_HOST: redis
@@ -82,7 +82,7 @@ services:
 
 
   tcp-data-provider:
-    image: yusufokr0/tcp-data-provider:1.0.1
+    image: yusufokr0/tcp-data-provider:1.0.2
     container_name: tcp-data-provider-app
     ports:
       - "8090:8090"
@@ -91,19 +91,19 @@ services:
       CURRENCY_PAIRS: TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
       TCP_USDTRY_BID: 38.4426
       TCP_USDTRY_ASK: 38.8584
-      TCP_USDTRY_MIN_LIMIT: 36.5134
-      TCP_USDTRY_MAX_LIMIT: 40.1324
+      TCP_USDTRY_MIN_LIMIT: 37.9134
+      TCP_USDTRY_MAX_LIMIT: 39.1324
       TCP_EURUSD_BID: 1.1266
-      TCP_EURUSD_ASK: 1.1569
-      TCP_EURUSD_MIN_LIMIT: 1.02254
-      TCP_EURUSD_MAX_LIMIT: 1.22423
+      TCP_EURUSD_ASK: 1.1369
+      TCP_EURUSD_MIN_LIMIT: 1.10654
+      TCP_EURUSD_MAX_LIMIT: 1.14654
       TCP_GBPUSD_BID: 1.3273
       TCP_GBPUSD_ASK: 1.3573
-      TCP_GBPUSD_MIN_LIMIT: 1.22245
-      TCP_GBPUSD_MAX_LIMIT: 1.42142
+      TCP_GBPUSD_MIN_LIMIT: 1.30245
+      TCP_GBPUSD_MAX_LIMIT: 1.34142
       MINIMUM_RATE_CHANGE: 0.001
-      MAXIMUM_RATE_CHANGE: 0.003
-      PUBLISH_FREQUENCY: 5000
+      MAXIMUM_RATE_CHANGE: 0.002
+      PUBLISH_FREQUENCY: 7000
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
       USER_CREDENTIALS: yusuf|pass,admin|admin,32bit|aloha,user1|user1
@@ -127,12 +127,12 @@ services:
       REDIS_CUSTOM_HOST: redis
       REDIS_CUSTOM_PORT: 6379
       MINIMUM_RATE_CHANGE: 0.001
-      MAXIMUM_RATE_CHANGE: 0.003
-      RATE_INTERVAL: 5000   # RATE UPDATE INTERVAL
+      MAXIMUM_RATE_CHANGE: 0.002
+      RATE_INTERVAL: 7000   # RATE UPDATE INTERVAL
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
       LOG_LEVEL_TOYOTA: INFO
-      #SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
+      SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
       # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
       # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
     networks:
@@ -142,7 +142,7 @@ services:
       - redis
     volumes:
       - rest-platform-log:/app/rest-data-provider/logs
-      #- ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
+      - ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
 
 
 

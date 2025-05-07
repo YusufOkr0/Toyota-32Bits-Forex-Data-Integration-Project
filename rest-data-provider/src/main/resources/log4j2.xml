@@ -42,12 +42,12 @@
     </Appenders>
 
     <Loggers>
-        <Root level="${env:LOG_LEVEL_ROOT:-INFO}">
+        <Root level="INFO">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Root>
 
-        <Logger name="com.toyota" level="${env:LOG_LEVEL_TOYOTA:-INFO}" additivity="false">
+        <Logger name="com.toyota" level="INFO" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
