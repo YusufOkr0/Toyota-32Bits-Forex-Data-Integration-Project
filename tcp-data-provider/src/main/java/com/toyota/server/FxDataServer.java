@@ -166,7 +166,7 @@ public class FxDataServer {
                 buffer.get(byteData);
 
                 String[] clientMessage = new String(byteData, StandardCharsets.UTF_8)
-                        .split("\r\n");
+                        .split("\n");
 
                 for (String message : clientMessage) {
                     logger.debug("Received message from client {}: {}", getClientAddressSafe(clientChannel), message);

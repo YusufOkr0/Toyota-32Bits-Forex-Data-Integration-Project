@@ -27,5 +27,5 @@ kafka:
       calculated:
         topic: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC:calculated-rates}
         group-id: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID:calculated-rates-group}
-      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:latest}
+      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
 

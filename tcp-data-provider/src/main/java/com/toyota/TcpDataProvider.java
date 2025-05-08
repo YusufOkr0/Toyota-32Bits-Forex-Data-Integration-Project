@@ -24,58 +24,45 @@ public class TcpDataProvider {
     public static void main(String[] args) {
 
         final ExecutorService executorService = Executors.newFixedThreadPool(2);
-
         final ConfigUtil config = new ConfigUtil();
 
         final int SERVER_PORT = config.getIntValue("server.port");
         final int PUBLISH_FREQUENCY = config.getIntValue("publish.frequency");
         final int SPIKE_INTERVAL = config.getIntValue("spike.interval");
 
-        final BigDecimal SPIKE_PERCENTAGE = new BigDecimal(config.getStringValue("spike.percentage"));
-        final BigDecimal MINIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("minimum.rate.change"));
-        final BigDecimal MAXIMUM_RATE_CHANGE = new BigDecimal(config.getStringValue("maximum.rate.change"));
+        final BigDecimal SPIKE_PERCENTAGE = config.getBigDecimalValue("spike.percentage");
+        final BigDecimal MINIMUM_RATE_CHANGE = config.getBigDecimalValue("minimum.rate.change");
+        final BigDecimal MAXIMUM_RATE_CHANGE = config.getBigDecimalValue("maximum.rate.change");
 
         final List<String> CURRENCY_PAIRS = Arrays.stream(config.getStringValue("currency.pairs").split(",")).toList();
         final List<String> USER_CREDENTIALS = Arrays.stream(config.getStringValue("user.credentials").split(",")).toList();
-
 
         final ConcurrentHashMap<String, Set<SocketChannel>> SUBSCRIPTIONS = new ConcurrentHashMap<>();
         for (String currencyPair : CURRENCY_PAIRS) {
             SUBSCRIPTIONS.put(currencyPair, ConcurrentHashMap.newKeySet());
         }
 
-
         final Map<String, String> AUTH_REPOSITORY = new HashMap<>();
-
         for (String nameAndPassword : USER_CREDENTIALS) {
             String[] credentials = nameAndPassword.split("\\|");
             AUTH_REPOSITORY.put(credentials[0], credentials[1]);
         }
 
         final AuthService AUTH_SERVICE = new AuthService(AUTH_REPOSITORY);
-
-
-
         final List<Rate> INITIAL_RATES = new ArrayList<>();
 
         for (String currencyPair : CURRENCY_PAIRS) {
-            try{
+            try {
                 String lowerCasePair = currencyPair.toLowerCase();
-                String bidKey = lowerCasePair + ".bid";
-                String askKey = lowerCasePair + ".ask";
-                String minLimitKey = lowerCasePair + ".min.limit";
-                String maxLimitKey = lowerCasePair + ".max.limit";
-
-                BigDecimal bid = new BigDecimal(config.getStringValue(bidKey));
-                BigDecimal ask = new BigDecimal(config.getStringValue(askKey));
-                BigDecimal minLimit = new BigDecimal(config.getStringValue(minLimitKey));
-                BigDecimal maxLimit = new BigDecimal(config.getStringValue(maxLimitKey));
+                BigDecimal bid = config.getBigDecimalValue(lowerCasePair + ".bid");
+                BigDecimal ask = config.getBigDecimalValue(lowerCasePair + ".ask");
+                BigDecimal minLimit = config.getBigDecimalValue(lowerCasePair + ".min.limit");
+                BigDecimal maxLimit = config.getBigDecimalValue(lowerCasePair + ".max.limit");
 
                 Rate rate = new Rate(currencyPair, bid, ask, LocalDateTime.now(), minLimit, maxLimit);
                 INITIAL_RATES.add(rate);
-
-            }catch (RuntimeException e){
-                System.out.println("ERROR: Unexpected error loading initial rate for '" + currencyPair + "': " + e.getMessage());
+            } catch (RuntimeException e) {
+                logger.error("Unexpected error loading initial rate for '{}': {}", currencyPair, e.getMessage(), e);
             }
         }
 

@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -145,7 +146,8 @@ public class TcpSubscriberImpl implements SubscriberService {
 
     private void sendMessageToServer(String message) {
         if (writer != null) {
-            writer.println(message);
+            writer.print(message + "\n");
+            writer.flush();
         }
     }
 

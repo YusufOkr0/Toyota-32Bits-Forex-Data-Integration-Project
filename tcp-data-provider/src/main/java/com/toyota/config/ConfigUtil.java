@@ -2,6 +2,7 @@ package com.toyota.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.Properties;
 
 /**
@@ -58,4 +59,15 @@ public class ConfigUtil {
                     String.format("Invalid integer value for key '%s': '%s'", key, value), e);
         }
     }
+
+    public BigDecimal getBigDecimalValue(String key) {
+        String value = getStringValue(key);
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid BigDecimal value for key '%s': '%s'", key, value), e);
+        }
+    }
+
 }
