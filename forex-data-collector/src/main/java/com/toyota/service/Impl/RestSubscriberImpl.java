@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.toyota.config.ApplicationConfig;
+import com.toyota.config.SubscriberConfig;
 import com.toyota.dtos.response.ApiKeyResponse;
 import com.toyota.entity.Rate;
 import com.toyota.service.CoordinatorService;
@@ -26,7 +27,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private static final Logger log = LogManager.getLogger(RestSubscriberImpl.class);
 
-    private final long subscriptionDelayMs;
+    private final Integer subscriptionDelayMs;
 
     private String apiKey;
 
@@ -41,15 +42,17 @@ public class RestSubscriberImpl implements SubscriberService {
     private final Map<String, ScheduledFuture<?>> activeSubscriptions;
     private final ScheduledExecutorService scheduler;
     private final CoordinatorService coordinator;
+    private final SubscriberConfig subscriberConfig;
 
 
-    public RestSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
+    public RestSubscriberImpl(CoordinatorService coordinator, SubscriberConfig subscriberConfig) {
+        this.subscriberConfig = subscriberConfig;
         this.coordinator = coordinator;
 
-        this.username = applicationConfig.getValue("rest.platform.username");
-        this.password = applicationConfig.getValue("rest.platform.password");
-        this.baseUrl = applicationConfig.getValue("rest.platform.base.url");
-        this.subscriptionDelayMs = applicationConfig.getIntValue("subscription.delay.ms");
+        this.username = subscriberConfig.getProperty("username",String.class);
+        this.password = subscriberConfig.getProperty("password",String.class);
+        this.baseUrl = subscriberConfig.getProperty("baseUrl",String.class);
+        this.subscriptionDelayMs = subscriberConfig.getProperty("subscriptionDelayMs",Integer.class);
 
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
@@ -142,6 +145,11 @@ public class RestSubscriberImpl implements SubscriberService {
         }else {
             log.warn("Rest Subscriber: No subscription found for rate: {} on platform: {}", rateName, platformName);
         }
+    }
+
+    @Override
+    public SubscriberConfig getConfig() {
+        return this.subscriberConfig;
     }
 
 

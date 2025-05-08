@@ -13,8 +13,7 @@ import java.util.*;
  * Singleton configuration loader that reads application settings from a properties file.
  * <p>
  * Configuration values can be overridden by environment variables using an uppercase format
- * with dots replaced by underscores. For example, the property key {@code exchange.rates}
- * can be overridden by the environment variable {@code EXCHANGE_RATES}.
+ * with dots replaced by underscores.
  * </p>
  *
  * <p>

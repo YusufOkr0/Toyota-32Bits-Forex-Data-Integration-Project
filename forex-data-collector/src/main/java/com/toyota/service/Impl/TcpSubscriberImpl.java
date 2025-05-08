@@ -1,7 +1,7 @@
 package com.toyota.service.Impl;
 
+import com.toyota.config.SubscriberConfig;
 import com.toyota.service.CoordinatorService;
-import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.Rate;
 import com.toyota.service.SubscriberService;
 import org.apache.logging.log4j.LogManager;
@@ -14,7 +14,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,17 +37,19 @@ public class TcpSubscriberImpl implements SubscriberService {
     private PrintWriter writer;
 
     private final CoordinatorService coordinator;
+    private final SubscriberConfig subscriberConfig;
     private final ExecutorService executorService;
 
-    public TcpSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
+    public TcpSubscriberImpl(CoordinatorService coordinator,SubscriberConfig subscriberConfig) {
         this.coordinator = coordinator;
+        this.subscriberConfig = subscriberConfig;
         this.executorService = Executors.newFixedThreadPool(2);
 
 
-        this.serverHost = applicationConfig.getValue("tcp.platform.host");
-        this.serverPort = applicationConfig.getIntValue("tcp.platform.port");
-        this.username = applicationConfig.getValue("tcp.platform.username");
-        this.password = applicationConfig.getValue("tcp.platform.password");
+        this.serverHost = subscriberConfig.getProperty("host",String.class);
+        this.serverPort = subscriberConfig.getProperty("port",Integer.class);
+        this.username = subscriberConfig.getProperty("username",String.class);
+        this.password = subscriberConfig.getProperty("password",String.class);
     }
 
     @Override
@@ -101,6 +102,11 @@ public class TcpSubscriberImpl implements SubscriberService {
     public void unSubscribe(String platformName, String rateName) {
         sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
         log.info("Tcp Subscriber: Unsubscribed to rate: {} on platform: {}", rateName, platformName);
+    }
+
+    @Override
+    public SubscriberConfig getConfig() {
+        return this.subscriberConfig;
     }
 
     private void listenToIncomingRates(String platformName) {
