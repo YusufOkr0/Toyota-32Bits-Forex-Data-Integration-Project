@@ -12,6 +12,16 @@ public class SubscriberConfig {
     private List<String> exchangeRates;
     private Map<String,Object> properties;
 
+    public SubscriberConfig(String platformName, String className, List<String> exchangeRates, Map<String, Object> properties) {
+        this.platformName = platformName;
+        this.className = className;
+        this.exchangeRates = exchangeRates;
+        this.properties = properties;
+    }
+
+    public SubscriberConfig() {
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T getProperty(String key,Class<T> type){
         Object value = properties.get(key);
@@ -22,16 +32,6 @@ public class SubscriberConfig {
             throw new IllegalArgumentException(String.format("Property '%s' is not of type '%s'.",key, type.getSimpleName()));
         }
         return (T) value;
-    }
-
-    public SubscriberConfig(String platformName, String className, List<String> exchangeRates, Map<String, Object> properties) {
-        this.platformName = platformName;
-        this.className = className;
-        this.exchangeRates = exchangeRates;
-        this.properties = properties;
-    }
-
-    public SubscriberConfig() {
     }
 
     public String getPlatformName() {

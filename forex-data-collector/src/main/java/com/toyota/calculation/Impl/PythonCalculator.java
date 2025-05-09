@@ -23,18 +23,13 @@ public class PythonCalculator implements CalculationService {
     private static final String FORMULA_FILE = "scripts/formulas.py";
 
     private Source source;
-    private final ThreadLocal<Context> contextHolder = ThreadLocal.withInitial(this::createContext);
 
     public PythonCalculator() {
         loadTheSourceCode();
     }
 
     public boolean isInComingRateValid(String inComingBid, String inComingAsk, List<String> cachedBids, List<String> cachedAsks) {
-        logger.debug("PythonCalculator: Validating incoming rate. Incoming bid: {}, ask: {} | Cached bids size: {}, asks size: {}",
-                inComingBid, inComingAsk, cachedBids.size(), cachedAsks.size());
-        try {
-            Context context = contextHolder.get();
-
+        try (Context context = createContext()) {
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("is_rate_valid");
@@ -47,21 +42,17 @@ public class PythonCalculator implements CalculationService {
             );
 
             boolean validationResult = result.asBoolean();
-            logger.debug("PythonCalculator: Validation result: {}", validationResult);
+            logger.debug("PythonCalculator: Validation result for incoming rate: {}", validationResult);
 
             return validationResult;
         } catch (Exception e) {
-            logger.error("PythonCalculator: Error during rate validation. Details: {}", e.getMessage(), e);
+            logger.error("PythonCalculator: Error during rate validation. Validation result returning false. Details: {}", e.getMessage(), e);
         }
         return false;
     }
 
     public CalculatedRate calculateUsdTry(List<String> cachedBids, List<String> cachedAsks) {
-        logger.debug("PythonCalculator: Starting USD/TRY calculation. Cached bids: {}, Cached asks: {}",
-                cachedBids.size(), cachedAsks.size());
-        try {
-            Context context = contextHolder.get();
-
+        try (Context context = createContext()) {
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_usd_try");
@@ -70,7 +61,6 @@ public class PythonCalculator implements CalculationService {
                     cachedBids,
                     cachedAsks
             );
-
 
             String usd_try_bid = result.getArrayElement(0).asString();
             String usd_try_ask = result.getArrayElement(1).asString();
@@ -88,18 +78,15 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate USD/TRY. Details: {}", e.getMessage(), e);
-            logger.warn("PythonCalculator: USD/TRY calculation returning null due to calculation error!");
+            logger.error("PythonCalculator: Failed to calculate USD/TRY." +
+                    " USD/TRY calculation returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
     }
 
     @Override
     public CalculatedRate calculateRateDependentOnUsdTry(String rateName, String usdMid, List<String> cachedBids, List<String> cachedAsks) {
-        logger.debug("PythonCalculator: Calculating rate dependent on USD/TRY. Rate name: {}, USD mid: {}", rateName, usdMid);
-        try {
-            Context context = contextHolder.get();
-
+        try (Context context = createContext()) {
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_rate_dependent_on_usd_try");
@@ -116,7 +103,7 @@ public class PythonCalculator implements CalculationService {
             BigDecimal bid = new BigDecimal(rate_bid);
             BigDecimal ask = new BigDecimal(rate_ask);
 
-            logger.debug("PythonCalculator: Dependent rate: {} calculated successfully. Bid: {}, Ask: {}",rateName, bid, ask);
+            logger.debug("PythonCalculator: Dependent rate: {} calculated successfully. Bid: {}, Ask: {}", rateName, bid, ask);
 
             return new CalculatedRate(
                     rateName,
@@ -126,19 +113,15 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate rate dependent on USD/TRY. Details: {}", e.getMessage(), e);
-            logger.warn("PythonCalculator: Derived Rate returning null due to calculation error!");
+            logger.error("PythonCalculator: Failed to calculate rate dependent on USD/TRY. " +
+                    "Derived Rate returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
     }
 
     @Override
     public BigDecimal calculateUsdTryMidValue(List<String> cachedUsdTryBids, List<String> cachedUsdTryAsks) {
-        logger.debug("PythonCalculator: Calculating USD/TRY mid value. Cached bids: {}, Cached asks: {}",
-                cachedUsdTryBids.size(), cachedUsdTryAsks.size());
-        try {
-            Context context = contextHolder.get();
-
+        try (Context context = createContext()) {
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_usd_try_mid_value");
@@ -153,31 +136,22 @@ public class PythonCalculator implements CalculationService {
             return new BigDecimal(midValue);
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate USD/TRY mid value. Details: {}", e.getMessage(), e);
-            logger.warn("PythonCalculator: USD/TRY mid value returning null due to calculation error!");
+            logger.error("PythonCalculator: Failed to calculate USD/TRY mid value. " +
+                    "USD/TRY mid value returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
     }
 
 
-
-
-
     private Context createContext() {
-        logger.trace("PythonCalculator: Creating new GraalVM context for Python execution.");
-
         Context context = Context.newBuilder(LANGUAGE_NAME)
                 .allowAllAccess(true)
                 .build();
         context.eval(source);
-
-        logger.trace("PythonCalculator: Python source code evaluated successfully.");
         return context;
     }
 
     private void loadTheSourceCode() {
-        logger.info("PythonCalculator: Loading Python source code from file: {}", FORMULA_FILE);
-
         try (InputStream scriptFile = PythonCalculator.class.getClassLoader().getResourceAsStream(FORMULA_FILE);
              InputStreamReader reader = (scriptFile != null) ? new InputStreamReader(scriptFile) : null) {
 
@@ -193,17 +167,9 @@ public class PythonCalculator implements CalculationService {
             ).build();
 
             logger.trace("PythonCalculator: Python source code loaded and built successfully.");
-
         } catch (IOException e) {
             logger.error("PythonCalculator: I/O Exception while loading Python source file: {}", e.getMessage(), e);
             throw new ConfigFileLoadingException("Error while loading Python file: " + e.getMessage());
         }
     }
-
-
-    public ThreadLocal<Context> getContextHolder() {
-        return this.contextHolder;
-    }
-
-
 }

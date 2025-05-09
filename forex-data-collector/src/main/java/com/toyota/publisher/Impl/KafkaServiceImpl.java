@@ -3,6 +3,7 @@ package com.toyota.publisher.Impl;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
+import com.toyota.exception.ConnectionException;
 import com.toyota.publisher.KafkaService;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -35,7 +36,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendRawRate(Rate rawRate){
-        logger.info("KafkaServiceImpl: Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
+        logger.trace("KafkaServiceImpl: Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -60,7 +61,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendCalculatedRate(CalculatedRate calculatedRate){
-        logger.info("KafkaServiceImpl: Sending calculated rate to Kafka topic: {}, rate name: {}", calculatedRateTopic, calculatedRate.getName());
+        logger.trace("KafkaServiceImpl: Sending calculated rate to Kafka topic: {}, rate name: {}", calculatedRateTopic, calculatedRate.getName());
 
         String formattedRawRate = String.format(
                 "%s|%s|%s|%s",
@@ -91,7 +92,13 @@ public class KafkaServiceImpl implements KafkaService {
         kafkaConfigs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         kafkaConfigs.put("max.block.ms", "5000");
 
-        forexRatePublisher = new KafkaProducer<>(kafkaConfigs);
+
+        try {
+            forexRatePublisher = new KafkaProducer<>(kafkaConfigs);
+            forexRatePublisher.partitionsFor(rawRateTopic);
+        } catch (Exception e) {
+            throw new ConnectionException("Unable to connect to Kafka.");
+        }
     }
 
 

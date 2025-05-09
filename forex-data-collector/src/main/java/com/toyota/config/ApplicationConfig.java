@@ -62,13 +62,6 @@ public class ApplicationConfig {
         }
     }
 
-    public List<String> getExchangeRates() {
-        String exchangeRates = getValue("exchange.rates");
-        if (exchangeRates != null && !exchangeRates.isBlank()) {
-            return Arrays.asList(exchangeRates.split(","));
-        }
-        return new ArrayList<>();
-    }
 
     private void loadProperties() {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE_NAME)) {

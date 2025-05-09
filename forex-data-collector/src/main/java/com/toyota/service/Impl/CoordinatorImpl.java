@@ -56,12 +56,6 @@ public class CoordinatorImpl implements CoordinatorService {
         this.retryCounts = new ConcurrentHashMap<>();
 
 
-        // create the context for per thread.
-        log.info("Coordinator: Warming up calculation service with {} threads...", THREAD_POOL_SIZE);
-        for (int i = 1; i <= THREAD_POOL_SIZE; i++) {
-            executorService.execute(rateManager::warmUpCalculationService);
-        }
-
         loadSubscribers();
         startSubscribers();
         log.info("Coordinator: Simulation begins. Active subscriber count :{}.", subscribers.size());
@@ -157,7 +151,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
 
     private void loadSubscribers() {
-        log.debug("Coordinator: Loading subscriber configurations from '{}'...", subscribersConfigFile);
+        log.info("Coordinator: Loading subscriber configurations from '{}'...", subscribersConfigFile);
         try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(subscribersConfigFile)) {
             if (jsonFile == null) {
                 log.error("Coordinator: Subscriber configuration file '{}' not found in classpath.", subscribersConfigFile);

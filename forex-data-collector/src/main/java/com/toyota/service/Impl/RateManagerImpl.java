@@ -27,10 +27,6 @@ public class RateManagerImpl implements RateManager {
         this.calculationService = calculationService;
     }
 
-    public void warmUpCalculationService() {
-        calculationService.getContextHolder().get();
-    }
-
 
 
     public void handleFirstInComingRate(String platformName, String rateName, Rate inComingRate) {
@@ -71,15 +67,12 @@ public class RateManagerImpl implements RateManager {
                 .map(rate -> rate.getAsk().toPlainString())
                 .toList();
 
-        log.debug("RateManagerImpl: Prepared {} cached bids and {} cached asks for validation of rate {}",
-                cachedBids.size(), cachedAsks.size(), rateName);
-
         String newBid = inComingRate.getBid().toPlainString();
         String newAsk = inComingRate.getAsk().toPlainString();
 
 
         if (calculationService.isInComingRateValid(newBid, newAsk, cachedBids, cachedAsks)) {
-        log.debug("RateManagerImpl: Rate: {} is valid. Saving Redis and sending to Kafka.", rateName);
+        log.info("RateManagerImpl: Incoming rate: {} from platform: {} is valid. Saving Redis and sending to Kafka.", rateName,platformName);
             redisService.saveRawRate(platformName, rateName, inComingRate);
             kafkaService.sendRawRate(inComingRate);
 
@@ -98,7 +91,7 @@ public class RateManagerImpl implements RateManager {
     private void calculateAndSaveUsdTry() {
         final String rateName = "USDTRY";
 
-        log.info("RateManagerImpl: Attempting calculation for {}.", rateName);
+        log.debug("RateManagerImpl: Attempting calculation for {}.", rateName);
 
         List<Rate> cachedRates = redisService.getAllRawRatesByRateName(rateName);
 
@@ -114,7 +107,7 @@ public class RateManagerImpl implements RateManager {
                 cachedUsdTryBids,
                 cachedUsdTryAsks
         );
-        log.debug("RateManagerImpl: Calculated USDTRY rate: {}", calculatedRate);
+        log.info("RateManagerImpl: Calculated USDTRY rate: {}", calculatedRate);
         redisService.saveCalculatedRate(
                 rateName,
                 calculatedRate
@@ -125,7 +118,7 @@ public class RateManagerImpl implements RateManager {
 
 
     private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName) {
-        log.info("RateManagerImpl: Attempting calculation for '{}' dependent on USD/TRY.", updatedRateName);
+        log.debug("RateManagerImpl: Attempting calculation for '{}'.", updatedRateName);
 
         List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);
         List<Rate> existsUsdTryRates = redisService.getAllRawRatesByRateName("USDTRY");
@@ -147,11 +140,7 @@ public class RateManagerImpl implements RateManager {
                 cachedUsdTryAsks
         );
 
-        String derivedRate = switch (updatedRateName) {
-            case "EURUSD" -> "EURTRY";
-            case "GBPUSD" -> "GBPTRY";
-            default -> "unknown_rate";
-        };
+        String derivedRate = updatedRateName.replace("USD","TRY");
 
         CalculatedRate calculatedRate = calculationService.calculateRateDependentOnUsdTry(
                 derivedRate,
@@ -159,7 +148,7 @@ public class RateManagerImpl implements RateManager {
                 cachedBids,
                 cachedAsks
         );
-        log.debug("RateManagerImpl: Calculated dependent rate: {}", calculatedRate);
+        log.info("RateManagerImpl: Calculated dependent rate: {}", calculatedRate);
 
         redisService.saveCalculatedRate(
                 derivedRate,

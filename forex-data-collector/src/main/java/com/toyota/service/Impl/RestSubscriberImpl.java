@@ -1,5 +1,7 @@
 package com.toyota.service.Impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -49,10 +51,10 @@ public class RestSubscriberImpl implements SubscriberService {
         this.subscriberConfig = subscriberConfig;
         this.coordinator = coordinator;
 
-        this.username = subscriberConfig.getProperty("username",String.class);
-        this.password = subscriberConfig.getProperty("password",String.class);
-        this.baseUrl = subscriberConfig.getProperty("baseUrl",String.class);
-        this.subscriptionDelayMs = subscriberConfig.getProperty("subscriptionDelayMs",Integer.class);
+        this.username = subscriberConfig.getProperty("username", String.class);
+        this.password = subscriberConfig.getProperty("password", String.class);
+        this.baseUrl = subscriberConfig.getProperty("baseUrl", String.class);
+        this.subscriptionDelayMs = subscriberConfig.getProperty("subscriptionDelayMs", Integer.class);
 
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
@@ -83,8 +85,12 @@ public class RestSubscriberImpl implements SubscriberService {
                 coordinator.onConnect(platformName, false);
             }
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Rest Subscriber: Failed to connect to platform: {} Exception Message: {}.", platformName, e.getMessage());
+            coordinator.onConnect(platformName, false);
+        } catch (InterruptedException e) {
+            log.warn("Rest Subscriber: Connect process interrupted for platform: {} Exception Message: {}.", platformName, e.getMessage());
+            Thread.currentThread().interrupt();
             coordinator.onConnect(platformName, false);
         }
     }
@@ -101,6 +107,8 @@ public class RestSubscriberImpl implements SubscriberService {
 
     @Override
     public void subscribe(String platformName, String rateName) {
+        log.info("Rest Subscriber: Subscribing to rate: {} on platform: {}", rateName, platformName);
+
         if (apiKey == null) {
             log.warn("Rest Subscriber: Cannot subscribe to rate: {}. API key is null.", rateName);
             return;
@@ -125,6 +133,7 @@ public class RestSubscriberImpl implements SubscriberService {
                 request
         );
 
+
         ScheduledFuture<?> scheduledJob = scheduler.scheduleWithFixedDelay(
                 subscribeJob,
                 1,
@@ -132,7 +141,6 @@ public class RestSubscriberImpl implements SubscriberService {
                 TimeUnit.MILLISECONDS
         );
         activeSubscriptions.put(rateName, scheduledJob);
-        log.info("Rest Subscriber: Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
@@ -142,7 +150,7 @@ public class RestSubscriberImpl implements SubscriberService {
             scheduledJob.cancel(false);
             receivedRates.remove(rateName);
             log.info("Rest Subscriber: Unsubscribed from rate: {} on platform: {}", rateName, platformName);
-        }else {
+        } else {
             log.warn("Rest Subscriber: No subscription found for rate: {} on platform: {}", rateName, platformName);
         }
     }
@@ -174,13 +182,12 @@ public class RestSubscriberImpl implements SubscriberService {
                     log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
                     handleConnectionFailure(platformName);
                 }
-            } catch (Exception e){
-                log.error("Rest Subscriber: Error fetching rate: {} from platform: {}. Exception Message: {}", rateName, platformName, e.getMessage());
-                if(e instanceof InterruptedException){
-                    Thread.currentThread().interrupt();
-                    log.error("Rest Subscriber: Thread is interrupted.");
-                }
-
+            } catch (IOException e) {
+                log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. Exception Message: {}.", rateName, platformName, e.getMessage());
+                handleConnectionFailure(platformName);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Rest Subscriber: Fetching rate: {} for platform: {} is interrupted.", rateName, platformName);
                 handleConnectionFailure(platformName);
             }
         };

@@ -8,6 +8,7 @@ import com.toyota.cache.CacheService;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
+import com.toyota.exception.ConnectionException;
 import org.apache.logging.log4j.LogManager;
 
 import org.apache.logging.log4j.Logger;
@@ -37,23 +38,22 @@ public class RedisServiceImpl implements CacheService {
         this.appConfig = appConfig;
         this.jedisPool = configureJedisPool();
         this.objectMapper = configureObjectMapper();
+        testRedisConnection();
     }
 
     @Override
     public void saveRawRate(String platformName, String rateName, Rate rate) {  // RawRates::TCP::USDTRY
 
         String redisKey = RAW_RATES_KEY_PREFIX + "::" + platformName + "::" + rateName;
-        logger.info("RedisServiceImpl: Saving raw rate to Redis for key: {}", redisKey);
-
         try (Jedis jedis = jedisPool.getResource()) {
 
             String rateInJson = objectMapper.writeValueAsString(rate);
 
-            jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
+            jedis.setex(redisKey, TTL_IN_SECONDS, rateInJson);
             logger.debug("RedisServiceImpl: Successfully saved raw rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save raw rates to the redis. Exception Message: {}.",e.getMessage());
+            logger.error("RedisServiceImpl: Error when save raw rates to the redis. Exception Message: {}.", e.getMessage());
         }
     }
 
@@ -61,16 +61,14 @@ public class RedisServiceImpl implements CacheService {
     public void saveCalculatedRate(String rateName, CalculatedRate rate) {
 
         String redisKey = CALCULATED_RATES_KEY_PREFIX + "::" + rateName;
-        logger.info("RedisServiceImpl: Saving calculated rate to Redis for key: {}", redisKey);
-
-        try(Jedis jedis = jedisPool.getResource()){
+        try (Jedis jedis = jedisPool.getResource()) {
 
             String rateInJson = objectMapper.writeValueAsString(rate);
 
-            jedis.setex(redisKey,TTL_IN_SECONDS,rateInJson);
+            jedis.setex(redisKey, TTL_IN_SECONDS, rateInJson);
             logger.debug("RedisServiceImpl: Successfully saved calculated rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save calculated rates to the redis. Exception Message: {}",e.getMessage());
+            logger.error("RedisServiceImpl: Error when save calculated rates to the redis. Exception Message: {}", e.getMessage());
         }
     }
 
@@ -78,9 +76,7 @@ public class RedisServiceImpl implements CacheService {
     @Override
     public List<Rate> getAllRawRatesByRateName(String rateName) {
         List<Rate> rates = new ArrayList<>();
-
         String pattern = RAW_RATES_KEY_PREFIX + "*::" + rateName;
-        logger.debug("RedisServiceImpl: Fetching raw rates from Redis with pattern: {}", pattern);
 
         try (Jedis jedis = jedisPool.getResource()) {
             String cursor = ScanParams.SCAN_POINTER_START;
@@ -101,13 +97,23 @@ public class RedisServiceImpl implements CacheService {
                 }
                 cursor = result.getCursor();
             } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
-            logger.debug("RedisServiceImpl: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
+
         } catch (JedisConnectionException e) {
             logger.error("RedisServiceImpl: Redis connection error : {}", e.getMessage());
         }
+
+        logger.debug("RedisServiceImpl: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
         return rates;
     }
 
+
+    private void testRedisConnection() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.ping();
+        } catch (JedisConnectionException e) {
+            throw new ConnectionException("Unable to connect to Redis.");
+        }
+    }
 
     private JedisPool configureJedisPool() {
 
@@ -119,7 +125,7 @@ public class RedisServiceImpl implements CacheService {
         poolConfig.setMaxIdle(6);
         poolConfig.setMinIdle(4);
 
-        return new JedisPool(poolConfig,redisHost,redisPort);
+        return new JedisPool(poolConfig, redisHost, redisPort);
     }
 
     private ObjectMapper configureObjectMapper() {
