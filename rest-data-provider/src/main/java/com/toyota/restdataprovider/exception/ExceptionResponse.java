@@ -1,8 +1,5 @@
 package com.toyota.restdataprovider.exception;
 
-
-import lombok.Data;
-
 import java.time.LocalDateTime;
 
 

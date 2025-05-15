@@ -16,8 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -81,24 +83,26 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest loginRequest) {
         log.info("Processing login request for username: {}", loginRequest.getUsername());
 
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                loginRequest.getUsername(),
-                loginRequest.getPassword()
-        );
+        try {
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    loginRequest.getUsername(),
+                    loginRequest.getPassword()
+            );
 
-        Authentication authentication = authenticationManager.authenticate(authToken);   // user wants to login. authentication provider will implement authenticate function.
-                                                                                        // make a custom provider or use exist ones. (ex = DAO ...)
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String jwtToken = jwtUtil.generateJwtToken(userDetails);
+            Authentication authentication = authenticationManager.authenticate(authToken);   // user wants to login. authentication provider will implement authenticate function.
+                                                                                            // make a custom provider or use exist ones. (ex = DAO ...)
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwtToken = jwtUtil.generateJwtToken(userDetails);
 
 
-        log.info("Login successful for username: {}", loginRequest.getUsername());
-        return new LoginResponse(jwtToken);
+            log.info("Login successful for username: {}", loginRequest.getUsername());
+            return new LoginResponse(jwtToken);
+
+        } catch (AuthenticationException e) {
+            throw new BadCredentialsException("Invalid credentials: " + e.getMessage());
+        }
 
     }
-
-
-
 
 
 
