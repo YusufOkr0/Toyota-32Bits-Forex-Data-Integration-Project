@@ -5,7 +5,9 @@ import com.toyota.restdataprovider.dtos.response.UpdatePlanResponse;
 import com.toyota.restdataprovider.entity.ForexUser;
 import com.toyota.restdataprovider.entity.PricingPlan;
 import com.toyota.restdataprovider.exception.InvalidPricingPlanException;
+import com.toyota.restdataprovider.exception.UserNotFoundException;
 import com.toyota.restdataprovider.repository.UserRepository;
+import com.toyota.restdataprovider.service.abstracts.RateLimitService;
 import com.toyota.restdataprovider.service.abstracts.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +22,15 @@ import java.time.LocalDateTime;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RateLimitService rateLimitService;
 
 
     @Override
-    public UpdatePlanResponse updatePricingPlanByUsername(String userName, UpdatePlanRequest updatePlanRequest) {
+    public UpdatePlanResponse updatePricingPlanByUsername(String username, UpdatePlanRequest updatePlanRequest) {
 
         ForexUser forexUser = userRepository
-                .findByUsername(userName)
-                .orElseThrow(() -> new UsernameNotFoundException(String.format("There is no such a user in the system with the username: {%s}", userName)));
+                .findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(String.format("There is no such a user in the system with the username: {%s}", username)));
 
         String comingPlan = updatePlanRequest.getNewPricingPlan().toUpperCase();
 
@@ -36,10 +39,15 @@ public class UserServiceImpl implements UserService {
             forexUser.setPricingPlan(updatedPlan);
             forexUser.setUpdatedAt(LocalDateTime.now());
             userRepository.save(forexUser);
+
             log.info("Pricing plan updated. Username: {}, New Plan: {}, Updated At: {}",
                     forexUser.getUsername(),
                     forexUser.getPricingPlan().name(),
-                    forexUser.getUpdatedAt());
+                    forexUser.getUpdatedAt()
+            );
+
+            rateLimitService.removeUserBucket(username);    // DELETE USER'S BUCKET TO RELOAD WITH THE NEW LIMIT.
+
         }catch (IllegalArgumentException exception){
             throw new InvalidPricingPlanException(String.format("Given plan: %s does not exists", comingPlan));
         }
