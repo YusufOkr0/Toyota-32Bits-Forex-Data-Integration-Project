@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,11 +40,13 @@ public class TcpSubscriberImpl implements SubscriberService {
     private final CoordinatorService coordinator;
     private final SubscriberConfig subscriberConfig;
     private final ExecutorService executorService;
+    private final Set<String> receivedRates;
 
     public TcpSubscriberImpl(CoordinatorService coordinator,SubscriberConfig subscriberConfig) {
         this.coordinator = coordinator;
         this.subscriberConfig = subscriberConfig;
         this.executorService = Executors.newFixedThreadPool(1);
+        this.receivedRates = ConcurrentHashMap.newKeySet();
 
 
         this.serverHost = subscriberConfig.getProperty("host",String.class);
@@ -109,10 +112,10 @@ public class TcpSubscriberImpl implements SubscriberService {
         return this.subscriberConfig;
     }
 
+
+
     private void listenToIncomingRates(String platformName) {
         log.info("Tcp Subscriber: Start to listen to incoming rates for platform: {}",platformName);
-        Set<String> receivedRates = new HashSet<>();
-
         try {
             String serverMessage;
             while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
@@ -127,12 +130,11 @@ public class TcpSubscriberImpl implements SubscriberService {
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
                 }
-
             }
+
         } catch (IOException e) {
             log.warn("Tcp Subscriber: Server listening error for platform: {}",platformName);
         } finally {
-            receivedRates.clear();
             closeResources();
             coordinator.onDisConnect(platformName);
         }

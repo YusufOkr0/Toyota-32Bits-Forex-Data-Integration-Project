@@ -9,6 +9,8 @@ import java.util.Map;
 public class SubscriberConfig {
     private String platformName;
     private String className;
+    private int connectionRetryCounts;
+    private int retryDelaySeconds;
     private List<String> exchangeRates;
     private Map<String,Object> properties;
 
@@ -62,4 +64,19 @@ public class SubscriberConfig {
         this.properties = properties;
     }
 
+    public int getConnectionRetryCounts() {
+        return connectionRetryCounts;
+    }
+
+    public void setConnectionRetryCounts(int connectionRetryCounts) {
+        this.connectionRetryCounts = connectionRetryCounts;
+    }
+
+    public int getRetryDelaySeconds() {
+        return retryDelaySeconds;
+    }
+
+    public void setRetryDelaySeconds(int retryDelaySeconds) {
+        this.retryDelaySeconds = retryDelaySeconds;
+    }
 }

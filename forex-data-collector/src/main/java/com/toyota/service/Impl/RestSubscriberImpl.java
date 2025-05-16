@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -27,10 +28,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
 
 public class RestSubscriberImpl implements SubscriberService {
 
     private static final Logger log = LogManager.getLogger(RestSubscriberImpl.class);
+
+    private final Object disconnectLock;
 
     private final Integer subscriptionDelayMs;
 
@@ -53,6 +57,7 @@ public class RestSubscriberImpl implements SubscriberService {
     public RestSubscriberImpl(CoordinatorService coordinator, SubscriberConfig subscriberConfig) {
         this.subscriberConfig = subscriberConfig;
         this.coordinator = coordinator;
+        this.disconnectLock = new Object();
 
         this.username = subscriberConfig.getProperty("username", String.class);
         this.password = subscriberConfig.getProperty("password", String.class);
@@ -139,7 +144,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
         ScheduledFuture<?> scheduledJob = scheduler.scheduleWithFixedDelay(
                 subscribeJob,
-                1,
+                3,
                 subscriptionDelayMs,
                 TimeUnit.MILLISECONDS
         );
@@ -166,43 +171,67 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private Runnable createSubscribeJob(String platformName, String rateName, HttpRequest request) {
         return () -> {
-            try {
-                log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200) {
-                    Rate rate = objectMapper.readValue(
-                            response.body(),
-                            Rate.class
-                    );
+            log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
 
-                    if (receivedRates.contains(rateName)) {
-                        coordinator.onRateUpdate(platformName, rateName, rate);
-                    } else {
-                        receivedRates.add(rateName);
-                        coordinator.onRateAvailable(platformName, rateName, rate);
-                    }
-                } else {
-                    log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
-                    handleConnectionFailure(platformName);
-                }
-            } catch (IOException e) {
-                log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. Exception Message: {}.", rateName, platformName, e.getMessage());
-                handleConnectionFailure(platformName);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("Rest Subscriber: Fetching rate: {} for platform: {} is interrupted.", rateName, platformName);
-                handleConnectionFailure(platformName);
-            }
+            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .orTimeout(5, TimeUnit.SECONDS)
+                    .thenAccept(response -> {
+                        int statusCode = response.statusCode();
+                        if (statusCode == 200) {
+                            try {
+                                Rate rate = objectMapper.readValue(response.body(), Rate.class);
+
+                                if (receivedRates.contains(rateName)) {
+                                    coordinator.onRateUpdate(platformName, rateName, rate);
+                                } else {
+                                    receivedRates.add(rateName);
+                                    coordinator.onRateAvailable(platformName, rateName, rate);
+                                }
+
+                            } catch (IOException e) {
+                                log.warn("Rest Subscriber: Failed to parse rate response for {}: {}", rateName, e.getMessage());
+                                handleConnectionFailure(platformName);
+                            }
+                        } else {
+                            log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, statusCode);
+                            handleConnectionFailure(platformName);
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        if (ex instanceof TimeoutException || (ex.getCause() instanceof TimeoutException)) {
+                            log.warn("Rest Subscriber: Timeout occurred for rate: {} on platform: {}. Cancelling subscription...", rateName, platformName);
+                            handleTimeoutException(platformName, rateName);
+                        } else {
+                            log.warn("Rest Subscriber: Exception while fetching rate: {} on platform: {}: {}", rateName, platformName, ex.getMessage());
+                            handleConnectionFailure(platformName);
+                        }
+                        return null;
+                    });
         };
     }
 
+
+
+    // NOTIFY COORDINATOR ON TIMEOUT EXCEPTION IN ORDER TO RE-SUBSCRIBE TO SPECIFIC RATE WITH DELAY
+    private void handleTimeoutException(String platformName, String rateName) {
+        ScheduledFuture<?> job = activeSubscriptions.remove(rateName);
+        if (job != null) {
+            job.cancel(true);
+            log.warn("Rest Subscriber: Subscription to rate {} on platform {} has been cancelled due to timeout.", rateName, platformName);
+            coordinator.onUnsubscribe(platformName,rateName);
+        }
+    }
+
+
     private void handleConnectionFailure(String platformName) {
-        log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
-        activeSubscriptions.values()
-                .forEach(scheduledJob -> scheduledJob.cancel(false));
-        activeSubscriptions.clear();
-        receivedRates.clear();
-        coordinator.onDisConnect(platformName);
+        synchronized (disconnectLock) {
+            if (!activeSubscriptions.isEmpty()) {
+                log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
+                activeSubscriptions.forEach((rateName, job) -> job.cancel(false));
+                activeSubscriptions.clear();
+                coordinator.onDisConnect(platformName);
+            }
+        }
     }
 
 

@@ -7,6 +7,8 @@
       "EURUSD",
       "GBPUSD"
     ],
+    "connectionRetryCounts": 20,
+    "retryDelaySeconds": 10,
     "properties": {
       "username": "YusufOkr0",
       "password": "YusufOkr0",
@@ -22,6 +24,8 @@
       "EURUSD",
       "GBPUSD"
     ],
+    "connectionRetryCounts": 20,
+    "retryDelaySeconds": 10,
     "properties": {
       "username": "admin",
       "password": "admin",

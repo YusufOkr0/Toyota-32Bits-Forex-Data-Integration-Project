@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4e455f4-068c-430c-83b9-32abe5b0ac82" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/config/SubscriberConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/config/SubscriberConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/subscribers.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/subscribers.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,7 +39,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "refactor/forex-data-collector",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project",
+    "last_opened_file_path": "C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project/forex-data-collector",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -93,6 +98,7 @@
       <workItem from="1746615650527" duration="27000" />
       <workItem from="1746615911905" duration="46000" />
       <workItem from="1747392387225" duration="5254000" />
+      <workItem from="1747426474783" duration="46000" />
     </task>
     <servers />
   </component>

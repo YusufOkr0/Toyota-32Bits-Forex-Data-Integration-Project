@@ -51,21 +51,11 @@ services:
     image: yusufokr0/forex-data-collector:1.0.2
     container_name: forex-data-collector
     environment:
-      EXCHANGE_RATES: USDTRY,EURUSD,GBPUSD
-      TCP_PLATFORM_HOST: tcp-data-provider-app
-      TCP_PLATFORM_PORT: 8090
-      TCP_PLATFORM_USERNAME: admin
-      TCP_PLATFORM_PASSWORD: admin
-      REST_PLATFORM_BASE_URL: http://rest-data-provider-app:8092
-      REST_PLATFORM_USERNAME: YusufOkr0
-      REST_PLATFORM_PASSWORD: YusufOkr0
-      SUBSCRIPTION_DELAY_MS: 7000
-      CONNECTION_RETRY_LIMIT: 10
-      RETRY_DELAY_SECONDS: 6
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9093
       KAFKA_TOPIC_RAW: raw-rates
+      KAFKA_TOPIC_CALCULATED: calculated-rates
       LOG_LEVEL_TOYOTA: INFO
     volumes:
       - main-app-log:/app/forex-data-collector/logs
