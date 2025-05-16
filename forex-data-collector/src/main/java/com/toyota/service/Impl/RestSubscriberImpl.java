@@ -20,6 +20,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +64,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
         this.scheduler = Executors.newScheduledThreadPool(1);
         this.activeSubscriptions = new ConcurrentHashMap<>();
-        this.receivedRates = new HashSet<>();
+        this.receivedRates = ConcurrentHashMap.newKeySet();
     }
 
     @Override
@@ -226,6 +229,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private HttpClient configureHttpClient() {
         return HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5L))
                 .build();
     }
 

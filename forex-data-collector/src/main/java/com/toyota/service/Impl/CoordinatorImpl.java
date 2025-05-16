@@ -1,7 +1,6 @@
 package com.toyota.service.Impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.config.SubscriberConfig;
@@ -19,16 +18,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 public class CoordinatorImpl implements CoordinatorService {
 
     private static final Logger log = LogManager.getLogger(CoordinatorImpl.class);
-    private static final int THREAD_POOL_SIZE = 10;
+    private static final int THREAD_POOL_SIZE = 5;
 
     private final String subscribersConfigFile;
 
@@ -38,7 +34,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
     private final RateManager rateManager;
     private final MailSender mailSender;
-    private final ExecutorService executorService;
+    private final ThreadPoolExecutor executorService;
     private final Map<String, SubscriberService> subscribers;
 
     public CoordinatorImpl(RateManager rateManager, MailSender mailSender, ApplicationConfig applicationConfig) {
@@ -50,7 +46,13 @@ public class CoordinatorImpl implements CoordinatorService {
         this.connectionRetryLimit = applicationConfig.getIntValue("connection.retry.limit");
         this.retryDelaySeconds = applicationConfig.getIntValue("retry.delay.seconds");
 
-        this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        this.executorService = new ThreadPoolExecutor(
+                2,
+                10,
+                1,
+                TimeUnit.MINUTES,
+                new LinkedBlockingDeque<>(60)
+        );
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();

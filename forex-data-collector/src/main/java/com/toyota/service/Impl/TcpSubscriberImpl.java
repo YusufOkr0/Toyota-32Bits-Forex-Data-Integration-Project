@@ -43,7 +43,7 @@ public class TcpSubscriberImpl implements SubscriberService {
     public TcpSubscriberImpl(CoordinatorService coordinator,SubscriberConfig subscriberConfig) {
         this.coordinator = coordinator;
         this.subscriberConfig = subscriberConfig;
-        this.executorService = Executors.newFixedThreadPool(2);
+        this.executorService = Executors.newFixedThreadPool(1);
 
 
         this.serverHost = subscriberConfig.getProperty("host",String.class);
