@@ -53,7 +53,7 @@ public class RestdataproviderApplication implements CommandLineRunner {
 
 		initialRateConfig.getRates().forEach((rateName,rateConfig) -> {
 			rateRepository.save(new Rate(
-					"REST_" + rateName.toUpperCase(),			// HERE I PUT A PREFIX TO THE RATE NAME.
+					rateName.toUpperCase(),
 					rateConfig.getBid(),
 					rateConfig.getAsk(),
 					timeStamp,

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,12 +33,6 @@ public class GlobalExceptionHandler {
                 .body(errors);
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ExceptionResponse> handleAuthenticationExceptions(
-            AuthenticationException ex,
-            HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request);
-    }
 
 
     @ExceptionHandler({
@@ -51,6 +46,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CurrencyPairNotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleCurrencyPairNotFoundException(CurrencyPairNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ExceptionResponse> handleBadCredentialsException(BadCredentialsException ex, HttpServletRequest request) {
         return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 

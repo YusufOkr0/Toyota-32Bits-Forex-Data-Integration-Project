@@ -6,12 +6,12 @@ import lombok.Getter;
 public enum PricingPlan {
 
     STANDARD( 20),
-    PREMIUM( 100);
+    PREMIUM( 60);
 
-    private final int rateLimit;
+    private final int limitPerMinute;
 
     PricingPlan(int rateLimit){
-        this.rateLimit = rateLimit;
+        this.limitPerMinute = rateLimit;
     }
 }
 
