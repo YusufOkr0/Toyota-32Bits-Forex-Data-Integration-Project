@@ -1,7 +1,7 @@
 package com.toyota.service.Impl;
 
+import com.toyota.config.SubscriberConfig;
 import com.toyota.service.CoordinatorService;
-import com.toyota.config.ApplicationConfig;
 import com.toyota.entity.Rate;
 import com.toyota.service.SubscriberService;
 import org.apache.logging.log4j.LogManager;
@@ -14,12 +14,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,17 +38,21 @@ public class TcpSubscriberImpl implements SubscriberService {
     private PrintWriter writer;
 
     private final CoordinatorService coordinator;
+    private final SubscriberConfig subscriberConfig;
     private final ExecutorService executorService;
+    private final Set<String> receivedRates;
 
-    public TcpSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
+    public TcpSubscriberImpl(CoordinatorService coordinator,SubscriberConfig subscriberConfig) {
         this.coordinator = coordinator;
-        this.executorService = Executors.newFixedThreadPool(2);
+        this.subscriberConfig = subscriberConfig;
+        this.executorService = Executors.newFixedThreadPool(1);
+        this.receivedRates = ConcurrentHashMap.newKeySet();
 
 
-        this.serverHost = applicationConfig.getValue("tcp.platform.host");
-        this.serverPort = applicationConfig.getIntValue("tcp.platform.port");
-        this.username = applicationConfig.getValue("tcp.platform.username");
-        this.password = applicationConfig.getValue("tcp.platform.password");
+        this.serverHost = subscriberConfig.getProperty("host",String.class);
+        this.serverPort = subscriberConfig.getProperty("port",Integer.class);
+        this.username = subscriberConfig.getProperty("username",String.class);
+        this.password = subscriberConfig.getProperty("password",String.class);
     }
 
     @Override
@@ -93,20 +97,25 @@ public class TcpSubscriberImpl implements SubscriberService {
 
     @Override
     public void subscribe(String platformName, String rateName) {
+        log.info("Tcp Subscriber: Subscribing to rate: {} on platform: {}", rateName, platformName);
         sendMessageToServer(String.format("subscribe|%s_%s", platformName, rateName));
-        log.info("Tcp Subscriber: Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
     public void unSubscribe(String platformName, String rateName) {
+        log.info("Tcp Subscriber: Unsubscribing from rate: {} on platform: {}", rateName, platformName);
         sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
-        log.info("Tcp Subscriber: Unsubscribed to rate: {} on platform: {}", rateName, platformName);
     }
+
+    @Override
+    public SubscriberConfig getConfig() {
+        return this.subscriberConfig;
+    }
+
+
 
     private void listenToIncomingRates(String platformName) {
         log.info("Tcp Subscriber: Start to listen to incoming rates for platform: {}",platformName);
-        Set<String> receivedRates = new HashSet<>();
-
         try {
             String serverMessage;
             while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
@@ -121,12 +130,11 @@ public class TcpSubscriberImpl implements SubscriberService {
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
                 }
-
             }
+
         } catch (IOException e) {
             log.warn("Tcp Subscriber: Server listening error for platform: {}",platformName);
         } finally {
-            receivedRates.clear();
             closeResources();
             coordinator.onDisConnect(platformName);
         }

@@ -1,8 +1,9 @@
 package com.toyota.service.Impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toyota.config.ApplicationConfig;
+import com.toyota.config.SubscriberConfig;
 import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
 import com.toyota.exception.*;
@@ -13,62 +14,48 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 public class CoordinatorImpl implements CoordinatorService {
 
     private static final Logger log = LogManager.getLogger(CoordinatorImpl.class);
-    private static final int THREAD_POOL_SIZE = 10;
 
-    private final String subscribersConfigFile;
-    private final int connectionRetryLimit;
-    private final int retryDelaySeconds;
+    private final String subscriberConfigPath;
 
-    private final List<String> exchangeRates;
     private final Map<String, Integer> retryCounts;
 
     private final RateManager rateManager;
     private final MailSender mailSender;
-    private final ApplicationConfig appConfig;
-    private final ExecutorService executorService;
+    private final ThreadPoolExecutor executorService;
     private final Map<String, SubscriberService> subscribers;
 
     public CoordinatorImpl(RateManager rateManager, MailSender mailSender, ApplicationConfig applicationConfig) {
         log.info("Coordinator: Initializing Coordinator...");
         this.mailSender = mailSender;
         this.rateManager = rateManager;
-        this.appConfig = applicationConfig;
 
-        this.subscribersConfigFile = appConfig.getValue("subscribers.config.file");
-        this.connectionRetryLimit = appConfig.getIntValue("connection.retry.limit");
-        this.retryDelaySeconds = appConfig.getIntValue("retry.delay.seconds");
-        this.exchangeRates = appConfig.getExchangeRates();
+        this.subscriberConfigPath = applicationConfig.getValue("subscribers.config.path");
 
-        this.executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        this.executorService = new ThreadPoolExecutor(
+                2,
+                10,
+                1,
+                TimeUnit.MINUTES,
+                new LinkedBlockingDeque<>(40)
+        );
 
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
 
 
-        // create the context for per thread.
-        log.info("Coordinator: Warming up calculation service with {} threads...", THREAD_POOL_SIZE);
-        for (int i = 1; i <= THREAD_POOL_SIZE; i++) {
-            executorService.execute(rateManager::warmUpCalculationService);
-        }
-
         loadSubscribers();
         startSubscribers();
         log.info("Coordinator: Simulation begins. Active subscriber count :{}.", subscribers.size());
     }
-
 
 
     @Override
@@ -77,15 +64,13 @@ public class CoordinatorImpl implements CoordinatorService {
             if (status) {
                 log.info("Coordinator: Platform '{}' connection status: {}", platformName, "CONNECTED");
 
-                retryCounts.put(platformName, 0);
                 SubscriberService subscriber = subscribers.get(platformName);
+                SubscriberConfig subscriberConfig = subscriber.getConfig();
 
-                if (subscriber != null) {
-                    exchangeRates.forEach(rate -> {
-                        log.debug("Coordinator: Subscription request sending for platform '{}', rate '{}'", platformName, rate);
-                        subscriber.subscribe(platformName, rate);
-                    });
-                }
+                subscriberConfig.getExchangeRates()
+                        .forEach(rateName -> {
+                            subscriber.subscribe(platformName, rateName);
+                        });
 
             } else {
                 log.error("Coordinator: Platform '{}' connection status: {}", platformName, "FAILED");
@@ -93,7 +78,6 @@ public class CoordinatorImpl implements CoordinatorService {
             }
         });
     }
-
 
 
     @Override
@@ -105,7 +89,6 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
 
-
     @Override
     public void onRateAvailable(String platformName, String rateName, Rate rate) {
         executorService.execute(() -> {
@@ -113,7 +96,6 @@ public class CoordinatorImpl implements CoordinatorService {
             rateManager.handleFirstInComingRate(platformName, rateName, rate);
         });
     }
-
 
 
     @Override
@@ -124,20 +106,41 @@ public class CoordinatorImpl implements CoordinatorService {
         });
     }
 
+    @Override
+    public void onUnsubscribe(String platformName, String rateName) {
+        executorService.execute(() -> {
+            long delayTimeInSeconds = 5;
 
+            log.error("Coordinator: Platform '{}' unsubscribe from rate '{}'. Retrying subscription to rate after {} seconds ... ", platformName, rateName, delayTimeInSeconds);
 
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(delayTimeInSeconds));  // Subscribe again after a while
 
-
+                SubscriberService subscriber = subscribers.get(platformName);
+                if (subscriber != null) {
+                    subscriber.subscribe(platformName, rateName);
+                }
+            } catch (InterruptedException e) {
+                log.error("Coordinator: Retrying subscription attempt for rate '{}' on platform {} was interrupted.", rateName, platformName, e);
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
 
 
     private void retryToConnectWithDelay(String platformName) {
+        SubscriberConfig subscriberConfig = subscribers.get(platformName).getConfig();
+
+        int connectionRetryCounts = subscriberConfig.getConnectionRetryCounts();
+        int retryDelaySeconds = subscriberConfig.getRetryDelaySeconds();
+
         int retryCount = retryCounts.getOrDefault(platformName, 0);
 
-        if (retryCount >= connectionRetryLimit) {
+        if (retryCount >= connectionRetryCounts) {
             log.error("Coordinator: Retry limit {} reached for platform '{}'. Sending notification email, but will continue retrying...",
-                    connectionRetryLimit, platformName);
+                    connectionRetryCounts, platformName);
 
-            mailSender.sendConnectionFailureNotification(platformName, connectionRetryLimit, retryDelaySeconds);
+            mailSender.sendConnectionFailureNotification(platformName, connectionRetryCounts, retryDelaySeconds);
 
             retryCounts.put(platformName, 0);
         } else {
@@ -146,7 +149,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
         try {
             log.warn("Coordinator: Retrying connection to '{}' in {} seconds (Attempt {}/{})...",
-                    platformName, retryDelaySeconds, retryCount + 1, connectionRetryLimit);
+                    platformName, retryDelaySeconds, retryCount + 1, connectionRetryCounts);
 
             Thread.sleep(TimeUnit.SECONDS.toMillis(retryDelaySeconds));
 
@@ -161,7 +164,6 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
 
-
     private void startSubscribers() {
         log.info("Coordinator: Starting all loaded subscribers...");
         subscribers.forEach((platformName, subscriber) -> {
@@ -170,47 +172,39 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
 
-
-
-
-
-
-
-
     private void loadSubscribers() {
-        log.debug("Coordinator: Loading subscriber configurations from '{}'...", subscribersConfigFile);
-        try (InputStream jsonFile = CoordinatorImpl.class.getClassLoader().getResourceAsStream(subscribersConfigFile)) {
+        try (InputStream jsonFile = getInputStream(subscriberConfigPath)) {
             if (jsonFile == null) {
-                log.error("Coordinator: Subscriber configuration file '{}' not found in classpath.", subscribersConfigFile);
-                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found in the classpath.", subscribersConfigFile));
+                log.error("Coordinator: Subscriber configuration file '{}' not found.", subscriberConfigPath);
+                throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found.", subscriberConfigPath));
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(jsonFile);
-            JsonNode subscribersNode = rootNode.get("subscribers");
+            List<SubscriberConfig> subscriberConfigs = mapper.readValue(jsonFile, new TypeReference<List<SubscriberConfig>>() {
+            });
 
-            if (subscribersNode == null || !subscribersNode.isArray()) {
-                log.error("Coordinator: Invalid configuration in '{}': 'subscribers' field must be a non-null JSON array.", subscribersConfigFile);
-                throw new InvalidConfigFileException(String.format("Invalid configuration file '%s': 'subscribers' field must be a non-null JSON array.", subscribersConfigFile));
+            for (SubscriberConfig config : subscriberConfigs) {
+                loadSubscriber(config);
             }
 
-            subscribersNode.forEach(this::loadSubscriber);
-            log.info("Coordinator: Subscribers loaded successfully from configuration file: '{}'.", subscribersConfigFile);
+            log.info("Coordinator: Subscribers loaded successfully from '{}'.", subscriberConfigPath);
         } catch (IOException e) {
-            log.error("Coordinator: Failed to read subscriber configuration file '{}'", subscribersConfigFile, e);
-            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", subscribersConfigFile, e.getMessage()));
+            log.error("Coordinator: Failed to read subscriber configuration file '{}'", subscriberConfigPath, e);
+            throw new ConfigFileLoadingException(String.format("Failed to read configuration file '%s': %s", subscriberConfigPath, e.getMessage()));
         }
     }
 
-    private void loadSubscriber(JsonNode subscriberNode) {
-        String platformName = subscriberNode.path("platformName").asText(null);
-        String className = subscriberNode.path("className").asText(null);
+    private void loadSubscriber(SubscriberConfig config) {
+        String platformName = config.getPlatformName();
+        String className = config.getClassName();
 
-        log.debug("Coordinator: loading subscriber for platform : {}", subscriberNode.toString());
+        log.debug("Coordinator: loading subscriber for platform '{}'", platformName);
+
         if (platformName == null || className == null) {
-            log.error("Coordinator: Invalid subscriber entry in config file '{}': 'platformName' ({}) or 'className' ({}) is missing.", subscribersConfigFile, platformName, className);
-            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", subscribersConfigFile));
+            log.error("Coordinator: Invalid subscriber entry in config file '{}': 'platformName' ({}) or 'className' ({}) is missing.", subscriberConfigPath, platformName, className);
+            throw new InvalidConfigFileException(String.format("Invalid subscriber entry in config file '%s': 'platformName' or 'className' is missing.", subscriberConfigPath));
         }
+
 
         try {
             Class<?> clazz = Class.forName(className);
@@ -220,8 +214,8 @@ public class CoordinatorImpl implements CoordinatorService {
             }
 
             SubscriberService subscriber = (SubscriberService) clazz
-                    .getDeclaredConstructor(CoordinatorService.class, ApplicationConfig.class)
-                    .newInstance(this, this.appConfig);
+                    .getDeclaredConstructor(CoordinatorService.class, SubscriberConfig.class)
+                    .newInstance(this, config);
 
             subscribers.put(platformName, subscriber);
             log.debug("Coordinator: Successfully loaded and instantiated subscriber for platform '{}'.", platformName);
@@ -233,5 +227,18 @@ public class CoordinatorImpl implements CoordinatorService {
             throw new ClassLoadingException(String.format("Unexpected error while loading subscriber class '%s': %s", className, e.getMessage()), e);
         }
     }
+
+
+    private InputStream getInputStream(String path) throws IOException {
+        File file = new File(path);
+        if (file.exists() && file.isFile()) {
+            log.info("Coordinator: Loading subscribers from external file: {}", path);
+            return new FileInputStream(file);
+        }
+
+        log.info("Coordinator: Loading subscribers from default file in classpath: {}", path);
+        return CoordinatorImpl.class.getClassLoader().getResourceAsStream(path);
+    }
+
 
 }

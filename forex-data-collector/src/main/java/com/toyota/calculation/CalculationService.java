@@ -60,5 +60,5 @@ public interface CalculationService {
      */
     CalculatedRate calculateRateDependentOnUsdTry(String rateName,String usdTryMid, List<String> cachedBids, List<String> cachedAsks);
 
-    ThreadLocal<Context> getContextHolder();
+
 }

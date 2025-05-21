@@ -46,4 +46,7 @@ public interface CoordinatorService {
      */
     void onRateUpdate(String platformName, String rateName, Rate rate);
 
+
+    void onUnsubscribe(String platformName, String rateName);
+
 }

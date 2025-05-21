@@ -1,9 +1,12 @@
 package com.toyota.service.Impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.toyota.config.ApplicationConfig;
+import com.toyota.config.SubscriberConfig;
 import com.toyota.dtos.response.ApiKeyResponse;
 import com.toyota.entity.Rate;
 import com.toyota.service.CoordinatorService;
@@ -15,18 +18,25 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
 
 public class RestSubscriberImpl implements SubscriberService {
 
     private static final Logger log = LogManager.getLogger(RestSubscriberImpl.class);
 
-    private final long subscriptionDelayMs;
+    private final Object disconnectLock;
+
+    private final Integer subscriptionDelayMs;
 
     private String apiKey;
 
@@ -41,22 +51,25 @@ public class RestSubscriberImpl implements SubscriberService {
     private final Map<String, ScheduledFuture<?>> activeSubscriptions;
     private final ScheduledExecutorService scheduler;
     private final CoordinatorService coordinator;
+    private final SubscriberConfig subscriberConfig;
 
 
-    public RestSubscriberImpl(CoordinatorService coordinator,ApplicationConfig applicationConfig) {
+    public RestSubscriberImpl(CoordinatorService coordinator, SubscriberConfig subscriberConfig) {
+        this.subscriberConfig = subscriberConfig;
         this.coordinator = coordinator;
+        this.disconnectLock = new Object();
 
-        this.username = applicationConfig.getValue("rest.platform.username");
-        this.password = applicationConfig.getValue("rest.platform.password");
-        this.baseUrl = applicationConfig.getValue("rest.platform.base.url");
-        this.subscriptionDelayMs = applicationConfig.getIntValue("subscription.delay.ms");
+        this.username = subscriberConfig.getProperty("username", String.class);
+        this.password = subscriberConfig.getProperty("password", String.class);
+        this.baseUrl = subscriberConfig.getProperty("baseUrl", String.class);
+        this.subscriptionDelayMs = subscriberConfig.getProperty("subscriptionDelayMs", Integer.class);
 
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
 
         this.scheduler = Executors.newScheduledThreadPool(1);
         this.activeSubscriptions = new ConcurrentHashMap<>();
-        this.receivedRates = new HashSet<>();
+        this.receivedRates = ConcurrentHashMap.newKeySet();
     }
 
     @Override
@@ -80,8 +93,12 @@ public class RestSubscriberImpl implements SubscriberService {
                 coordinator.onConnect(platformName, false);
             }
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Rest Subscriber: Failed to connect to platform: {} Exception Message: {}.", platformName, e.getMessage());
+            coordinator.onConnect(platformName, false);
+        } catch (InterruptedException e) {
+            log.warn("Rest Subscriber: Connect process interrupted for platform: {} Exception Message: {}.", platformName, e.getMessage());
+            Thread.currentThread().interrupt();
             coordinator.onConnect(platformName, false);
         }
     }
@@ -98,6 +115,8 @@ public class RestSubscriberImpl implements SubscriberService {
 
     @Override
     public void subscribe(String platformName, String rateName) {
+        log.info("Rest Subscriber: Subscribing to rate: {} on platform: {}", rateName, platformName);
+
         if (apiKey == null) {
             log.warn("Rest Subscriber: Cannot subscribe to rate: {}. API key is null.", rateName);
             return;
@@ -122,14 +141,14 @@ public class RestSubscriberImpl implements SubscriberService {
                 request
         );
 
+
         ScheduledFuture<?> scheduledJob = scheduler.scheduleWithFixedDelay(
                 subscribeJob,
-                1,
+                3,
                 subscriptionDelayMs,
                 TimeUnit.MILLISECONDS
         );
         activeSubscriptions.put(rateName, scheduledJob);
-        log.info("Rest Subscriber: Subscribed to rate: {} on platform: {}", rateName, platformName);
     }
 
     @Override
@@ -139,52 +158,80 @@ public class RestSubscriberImpl implements SubscriberService {
             scheduledJob.cancel(false);
             receivedRates.remove(rateName);
             log.info("Rest Subscriber: Unsubscribed from rate: {} on platform: {}", rateName, platformName);
-        }else {
+        } else {
             log.warn("Rest Subscriber: No subscription found for rate: {} on platform: {}", rateName, platformName);
         }
+    }
+
+    @Override
+    public SubscriberConfig getConfig() {
+        return this.subscriberConfig;
     }
 
 
     private Runnable createSubscribeJob(String platformName, String rateName, HttpRequest request) {
         return () -> {
-            try {
-                log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200) {
-                    Rate rate = objectMapper.readValue(
-                            response.body(),
-                            Rate.class
-                    );
+            log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
 
-                    if (receivedRates.contains(rateName)) {
-                        coordinator.onRateUpdate(platformName, rateName, rate);
-                    } else {
-                        receivedRates.add(rateName);
-                        coordinator.onRateAvailable(platformName, rateName, rate);
-                    }
-                } else {
-                    log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, response.statusCode());
-                    handleConnectionFailure(platformName);
-                }
-            } catch (Exception e){
-                log.error("Rest Subscriber: Error fetching rate: {} from platform: {}. Exception Message: {}", rateName, platformName, e.getMessage());
-                if(e instanceof InterruptedException){
-                    Thread.currentThread().interrupt();
-                    log.error("Rest Subscriber: Thread is interrupted.");
-                }
+            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .orTimeout(5, TimeUnit.SECONDS)
+                    .thenAccept(response -> {
+                        int statusCode = response.statusCode();
+                        if (statusCode == 200) {
+                            try {
+                                Rate rate = objectMapper.readValue(response.body(), Rate.class);
 
-                handleConnectionFailure(platformName);
-            }
+                                if (receivedRates.contains(rateName)) {
+                                    coordinator.onRateUpdate(platformName, rateName, rate);
+                                } else {
+                                    receivedRates.add(rateName);
+                                    coordinator.onRateAvailable(platformName, rateName, rate);
+                                }
+
+                            } catch (IOException e) {
+                                log.warn("Rest Subscriber: Failed to parse rate response for {}: {}", rateName, e.getMessage());
+                                handleConnectionFailure(platformName);
+                            }
+                        } else {
+                            log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, statusCode);
+                            handleConnectionFailure(platformName);
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        if (ex instanceof TimeoutException || (ex.getCause() instanceof TimeoutException)) {
+                            log.warn("Rest Subscriber: Timeout occurred for rate: {} on platform: {}. Cancelling subscription...", rateName, platformName);
+                            handleTimeoutException(platformName, rateName);
+                        } else {
+                            log.warn("Rest Subscriber: Exception while fetching rate: {} on platform: {}: {}", rateName, platformName, ex.getMessage());
+                            handleConnectionFailure(platformName);
+                        }
+                        return null;
+                    });
         };
     }
 
+
+
+    // NOTIFY COORDINATOR ON TIMEOUT EXCEPTION IN ORDER TO RE-SUBSCRIBE TO SPECIFIC RATE WITH DELAY
+    private void handleTimeoutException(String platformName, String rateName) {
+        ScheduledFuture<?> job = activeSubscriptions.remove(rateName);
+        if (job != null) {
+            job.cancel(true);
+            log.warn("Rest Subscriber: Subscription to rate {} on platform {} has been cancelled due to timeout.", rateName, platformName);
+            coordinator.onUnsubscribe(platformName,rateName);
+        }
+    }
+
+
     private void handleConnectionFailure(String platformName) {
-        log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
-        activeSubscriptions.values()
-                .forEach(scheduledJob -> scheduledJob.cancel(false));
-        activeSubscriptions.clear();
-        receivedRates.clear();
-        coordinator.onDisConnect(platformName);
+        synchronized (disconnectLock) {
+            if (!activeSubscriptions.isEmpty()) {
+                log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
+                activeSubscriptions.forEach((rateName, job) -> job.cancel(false));
+                activeSubscriptions.clear();
+                coordinator.onDisConnect(platformName);
+            }
+        }
     }
 
 
@@ -211,6 +258,7 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private HttpClient configureHttpClient() {
         return HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5L))
                 .build();
     }
 

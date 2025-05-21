@@ -34,5 +34,4 @@ public interface RateManager {
      */
     void handleRateUpdate(String platformName, String rateName, Rate inComingRate);
 
-    void warmUpCalculationService();
 }
