@@ -6,6 +6,7 @@
     <file url="file://$PROJECT_DIR$/forex-data-collector/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/forex-data-collector/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/kafka-db-consumer/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/kafka-opensearch-consumer/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/rest-data-provider/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />

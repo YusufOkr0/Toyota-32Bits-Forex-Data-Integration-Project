@@ -13,6 +13,7 @@
         <module>rest-data-provider</module>
         <module>tcp-data-provider</module>
         <module>kafka-db-consumer</module>
+        <module>kafka-opensearch-consumer</module>
     </modules>
 
 
