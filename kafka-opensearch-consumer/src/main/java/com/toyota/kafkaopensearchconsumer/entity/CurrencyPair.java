@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RawRate {
+public class CurrencyPair {
     @JsonProperty("name")
     private String name;
 
