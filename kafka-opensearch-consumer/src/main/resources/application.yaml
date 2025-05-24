@@ -3,15 +3,19 @@ spring:
     name: kafka-opensearch-consumer
 
 
-
-
 kafka:
   custom:
     bootstrap-servers: ${KAFKA_CUSTOM_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
+      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
+      group-id: ${KAFKA_CUSTOM_CONSUMER_GROUP-ID:opensearch}
       raw:
         topic: ${KAFKA_CUSTOM_CONSUMER_RAW_TOPIC:raw-rates}
       calc:
         topic: ${KAFKA_CUSTOM_CONSUMER_CALC_TOPIC:calculated-rates}
-      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
-      group-id: ${KAFKA_CUSTOM_CONSUMER_GROUP-ID:opensearch-group}
+
+opensearch:
+  host: ${OPENSEARCH_HOST:localhost}
+  port: ${OPENSEARCH_PORT:9200}
+  username: ${OPENSEARCH_USERNAME:admin}
+  password: ${OPENSEARCH_PASSWORD:Yusuf.32Bits}

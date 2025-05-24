@@ -60,8 +60,7 @@ public class RestdataproviderApplication implements CommandLineRunner {
 					rateConfig.getMinLimit(),
 					rateConfig.getMaxLimit()
 			));
-			String currency_pair = "REST_" + rateName.toUpperCase();
-			log.info("{} has been loaded successfully.",currency_pair);
+			log.info("{} has been loaded successfully.",rateName.toUpperCase());
 		});
 
 		log.info("All currency pairs has been loaded from 'application.yml' file.");
