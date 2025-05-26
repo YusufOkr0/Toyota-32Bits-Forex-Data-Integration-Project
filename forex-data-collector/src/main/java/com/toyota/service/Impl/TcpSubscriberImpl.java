@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -148,7 +149,7 @@ public class TcpSubscriberImpl implements SubscriberService {
         BigDecimal ask = new BigDecimal(messageParts[2].split(":")[1]);
         String timeStampStr = messageParts[3].split(":", 2)[1];
 
-        LocalDateTime timeStamp = LocalDateTime.parse(timeStampStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        Instant timeStamp = Instant.parse(timeStampStr);
         return new Rate(rateName, bid, ask, timeStamp);
     }
 

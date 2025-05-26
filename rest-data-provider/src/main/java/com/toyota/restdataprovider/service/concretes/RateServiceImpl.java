@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 
@@ -105,7 +106,7 @@ public class RateServiceImpl implements RateService {
 
             rate.setBid(newBid.setScale(16, RoundingMode.HALF_UP));        // UPDATE RATES WITH THE NEW VARIABLES
             rate.setAsk(newAsk.setScale(16, RoundingMode.HALF_UP));
-            rate.setTimestamp(LocalDateTime.now());
+            rate.setTimestamp(Instant.now());
             log.debug("Updated rate: {}, new bid: {}, new ask: {}", rateName, rate.getBid(), rate.getAsk());
 
             rateRepository.save(rate);

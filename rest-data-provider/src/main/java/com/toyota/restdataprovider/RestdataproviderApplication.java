@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.FileNotFoundException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -43,7 +44,7 @@ public class RestdataproviderApplication implements CommandLineRunner {
 
 		log.info("Loading Currency Pairs from Configuration file.");
 
-		LocalDateTime timeStamp = LocalDateTime.now();
+		Instant timeStamp = Instant.now();
 
 		if(initialRateConfig == null || initialRateConfig.getRates() == null){
 			log.error("Cannot load currency pair from configuration file. Please check application.yml file.");

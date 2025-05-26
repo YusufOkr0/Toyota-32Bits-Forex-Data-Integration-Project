@@ -12,6 +12,7 @@ import org.graalvm.polyglot.Value;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -74,7 +75,7 @@ public class PythonCalculator implements CalculationService {
                     "USDTRY",
                     bid,
                     ask,
-                    LocalDateTime.now()
+                    Instant.now()
             );
 
         } catch (Exception e) {
@@ -109,7 +110,7 @@ public class PythonCalculator implements CalculationService {
                     rateName,
                     bid,
                     ask,
-                    LocalDateTime.now()
+                    Instant.now()
             );
 
         } catch (Exception e) {

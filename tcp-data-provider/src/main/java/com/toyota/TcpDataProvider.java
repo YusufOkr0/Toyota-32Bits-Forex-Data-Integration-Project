@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.channels.SocketChannel;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +65,7 @@ public class TcpDataProvider {
                         rateInfo.getRateName(),
                         rateInfo.getBid(),
                         rateInfo.getAsk(),
-                        LocalDateTime.now(),
+                        Instant.now(),
                         rateInfo.getMinLimit(),
                         rateInfo.getMaxLimit()
                 );

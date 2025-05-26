@@ -1,6 +1,7 @@
 package com.toyota.entity;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public class Rate {
@@ -11,21 +12,21 @@ public class Rate {
 
     private BigDecimal ask;
 
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     private BigDecimal minLimit;
 
     private BigDecimal maxLimit;
 
 
-    public Rate(String rateName, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp) {
+    public Rate(String rateName, BigDecimal bid, BigDecimal ask, Instant timestamp) {
         this.rateName = rateName;
         this.bid = bid;
         this.ask = ask;
         this.timestamp = timestamp;
     }
 
-    public Rate(String rateName, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp,BigDecimal minLimit,BigDecimal maxLimit) {
+    public Rate(String rateName, BigDecimal bid, BigDecimal ask, Instant timestamp,BigDecimal minLimit,BigDecimal maxLimit) {
         this.rateName = rateName;
         this.bid = bid;
         this.ask = ask;
@@ -60,11 +61,11 @@ public class Rate {
         this.ask = ask;
     }
 
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 
