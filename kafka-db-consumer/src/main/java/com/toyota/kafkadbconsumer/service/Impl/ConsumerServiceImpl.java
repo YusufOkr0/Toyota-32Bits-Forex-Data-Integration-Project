@@ -1,7 +1,6 @@
 package com.toyota.kafkadbconsumer.service.Impl;
 
-import com.toyota.kafkadbconsumer.dtos.CalculatedRateDto;
-import com.toyota.kafkadbconsumer.dtos.RawRateDto;
+import com.toyota.kafkadbconsumer.dtos.CurrencyPair;
 import com.toyota.kafkadbconsumer.entity.CalculatedRate;
 import com.toyota.kafkadbconsumer.entity.RawRate;
 import com.toyota.kafkadbconsumer.repository.CalculatedRateRepository;
@@ -12,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Slf4j
 @Service
@@ -24,57 +23,57 @@ public class ConsumerServiceImpl implements ConsumerService {
 
     @KafkaListener(
             topics = "${kafka.custom.consumer.raw.topic}",
-            groupId = "${kafka.custom.consumer.raw.group-id}",
-            containerFactory = "rawRatesKafkaListenerContainerFactory"
+            groupId = "${kafka.custom.consumer.group-id}",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Override
-    public void consumeRawRate(RawRateDto rawRateDto) {
+    public void consumeRawRate(CurrencyPair currencyPair) {
         try {
-            if (rawRateDto == null) {
+            if (currencyPair == null) {
                 log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calculated.topic}");
                 return;
             }
 
             RawRate rawRate = RawRate.builder()
-                    .name(rawRateDto.getName())
-                    .bid(rawRateDto.getBid())
-                    .ask(rawRateDto.getAsk())
-                    .rateUpdateTime(rawRateDto.getTimestamp())
-                    .dbUpdateTime(LocalDateTime.now())
+                    .name(currencyPair.getName())
+                    .bid(currencyPair.getBid())
+                    .ask(currencyPair.getAsk())
+                    .rateUpdateTime(currencyPair.getTimestamp())
+                    .dbUpdateTime(Instant.now())
                     .build();
 
             rawRateRepository.save(rawRate);
 
             log.info("Successfully saved RawRate: {}", rawRate);
         } catch (Exception e) {
-            log.error("Error processing RawRateDto. DTO: {}, Error: {}", rawRateDto, e.getMessage(), e);
+            log.error("Error processing RawRateDto. DTO: {}, Error: {}", currencyPair, e.getMessage(), e);
         }
     }
 
     @KafkaListener(
-            topics = "${kafka.custom.consumer.calculated.topic}",
-            groupId = "${kafka.custom.consumer.calculated.group-id}",
-            containerFactory = "calculatedRatesKafkaListenerContainerFactory"
+            topics = "${kafka.custom.consumer.calc.topic}",
+            groupId = "${kafka.custom.consumer.group-id}",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Override
-    public void consumeCalculatedRate(CalculatedRateDto calculatedRateDto) {
+    public void consumeCalculatedRate(CurrencyPair currencyPair) {
         try {
-            if (calculatedRateDto == null) {
+            if (currencyPair == null) {
                 log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calculated.topic}");
                 return;
             }
 
             CalculatedRate calculatedRate = CalculatedRate.builder()
-                    .name(calculatedRateDto.getName())
-                    .bid(calculatedRateDto.getBid())
-                    .ask(calculatedRateDto.getAsk())
-                    .rateUpdateTime(calculatedRateDto.getTimestamp())
-                    .dbUpdateTime(LocalDateTime.now())
+                    .name(currencyPair.getName())
+                    .bid(currencyPair.getBid())
+                    .ask(currencyPair.getAsk())
+                    .rateUpdateTime(currencyPair.getTimestamp())
+                    .dbUpdateTime(Instant.now())
                     .build();
             calculatedRateRepository.save(calculatedRate);
             log.info("Successfully saved CalculatedRate: {}", calculatedRate);
         } catch (Exception e) {
-            log.error("Error processing CalculatedRateDto. DTO: {}, Error: {}", calculatedRateDto, e.getMessage(), e);
+            log.error("Error processing CalculatedRateDto. DTO: {}, Error: {}", currencyPair, e.getMessage(), e);
         }
 
     }

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -30,14 +31,14 @@ public class CalculatedRate {
     private BigDecimal ask;
 
     @Column(name = "rate_update_time")
-    private LocalDateTime rateUpdateTime;
+    private Instant rateUpdateTime;
 
     @Column(name = "db_update_time")
-    private LocalDateTime dbUpdateTime;
+    private Instant dbUpdateTime;
 
     @PrePersist
     private void onSave(){
-        dbUpdateTime = LocalDateTime.now();
+        dbUpdateTime = Instant.now();
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -22,5 +23,5 @@ public class CurrencyPair {
     private BigDecimal ask;
 
     @JsonProperty("timestamp")
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 }

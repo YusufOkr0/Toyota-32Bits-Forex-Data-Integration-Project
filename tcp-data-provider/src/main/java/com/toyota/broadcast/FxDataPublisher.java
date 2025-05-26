@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -111,7 +112,7 @@ public class FxDataPublisher {
         rate.setBid(newBid.setScale(16, RoundingMode.HALF_UP));
         rate.setAsk(newAsk.setScale(16,RoundingMode.HALF_UP));
 
-        rate.setTimestamp(LocalDateTime.now());
+        rate.setTimestamp(Instant.now());
         logger.trace("Rate {} updated. New Bid: {}, New Ask: {}", rate.getRateName(), rate.getBid(), rate.getAsk());
     }
 

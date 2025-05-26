@@ -1,18 +1,19 @@
 package com.toyota.entity;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public class CalculatedRate {
     private String name;
     private BigDecimal bid;
     private BigDecimal ask;
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     public CalculatedRate() {
     }
 
-    public CalculatedRate(String name, BigDecimal bid, BigDecimal ask, LocalDateTime timestamp) {
+    public CalculatedRate(String name, BigDecimal bid, BigDecimal ask, Instant timestamp) {
         this.name = name;
         this.bid = bid;
         this.ask = ask;
@@ -43,11 +44,11 @@ public class CalculatedRate {
         this.ask = ask;
     }
 
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 

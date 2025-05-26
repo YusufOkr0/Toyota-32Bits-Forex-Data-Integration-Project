@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Builder
@@ -19,5 +20,5 @@ public class RateDto {
 
     private BigDecimal ask;
 
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 }

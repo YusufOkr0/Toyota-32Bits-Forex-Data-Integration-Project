@@ -21,11 +21,10 @@ kafka:
   custom:
     bootstrap-servers: ${KAFKA_CUSTOM_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
+      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
+      group-id: ${KAFKA_CUSTOM_CONSUMER_GROUP-ID:postgres}
       raw:
         topic: ${KAFKA_CUSTOM_CONSUMER_RAW_TOPIC:raw-rates}
-        group-id: ${KAFKA_CUSTOM_CONSUMER_RAW_GROUP_ID:raw-rates-group}
-      calculated:
-        topic: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC:calculated-rates}
-        group-id: ${KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID:calculated-rates-group}
-      auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
+      calc:
+        topic: ${KAFKA_CUSTOM_CONSUMER_CALC_TOPIC:calculated-rates}
 
