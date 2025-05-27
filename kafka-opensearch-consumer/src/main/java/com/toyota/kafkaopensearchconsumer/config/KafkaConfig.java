@@ -14,7 +14,9 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,11 +74,22 @@ public class KafkaConfig {
                 jsonDeserializer
         );
     }
+
+
+    @Bean
+    public DefaultErrorHandler defaultErrorHandler() {
+        ExponentialBackOff backOff = new ExponentialBackOff(2000L, 2.0);
+        backOff.setMaxInterval(30000L);
+        backOff.setMaxAttempts(4);
+        return new DefaultErrorHandler(backOff);
+    }
+
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, CurrencyPair> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, CurrencyPair> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setCommonErrorHandler(defaultErrorHandler());
         return factory;
     }
 

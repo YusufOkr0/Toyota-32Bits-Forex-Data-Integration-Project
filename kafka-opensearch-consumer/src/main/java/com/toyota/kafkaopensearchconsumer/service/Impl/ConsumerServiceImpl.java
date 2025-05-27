@@ -1,6 +1,7 @@
-package com.toyota.kafkaopensearchconsumer.service;
+package com.toyota.kafkaopensearchconsumer.service.Impl;
 
 import com.toyota.kafkaopensearchconsumer.entity.CurrencyPair;
+import com.toyota.kafkaopensearchconsumer.service.ConsumerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -11,7 +12,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
-public class ConsumerServiceImpl {
+public class ConsumerServiceImpl implements ConsumerService {
 
     private final OpenSearchServiceImpl openSearchService;
 
@@ -21,6 +22,7 @@ public class ConsumerServiceImpl {
             groupId = "${kafka.custom.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
+    @Override
     public void consumeRawRates(
             CurrencyPair currencyPair,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
@@ -40,6 +42,7 @@ public class ConsumerServiceImpl {
             groupId = "${kafka.custom.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
+    @Override
     public void consumeCalculatedRates(
             CurrencyPair currencyPair,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
