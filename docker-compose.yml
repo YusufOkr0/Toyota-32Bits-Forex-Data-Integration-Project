@@ -16,7 +16,7 @@ services:
 
   postgres-kafka:
     image: postgres
-    container_name: postgres-kafka
+    container_name: kafka-db
     ports:
       - "5433:5432"
     environment:
@@ -30,11 +30,11 @@ services:
 
   postgres-rest-platform:
     image: postgres
-    container_name: postgres-rest-platform
+    container_name: rest-platform-db
     ports:
       - "5434:5432"
     environment:
-      POSTGRES_DB: rest_provider_db
+      POSTGRES_DB: rest_platform_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     networks:
@@ -48,7 +48,7 @@ services:
   ######## MY APPLICATIONS ########
 
   forex-data-collector:
-    image: yusufokr0/forex-data-collector:1.0.2
+    image: yusufokr0/forex-data-collector:1.0.0
     container_name: forex-data-collector
     environment:
       REDIS_HOST: redis
@@ -57,8 +57,10 @@ services:
       KAFKA_TOPIC_RAW: raw-rates
       KAFKA_TOPIC_CALCULATED: calculated-rates
       LOG_LEVEL_TOYOTA: INFO
+      SUBSCRIBERS_CONFIG_PATH: /app/conf/subscribers.json
     volumes:
       - main-app-log:/app/forex-data-collector/logs
+      - ./external-config/main-app/subscribers.json:/app/conf/subscribers.json:ro
     networks:
       - forex-net
     depends_on:
@@ -70,7 +72,7 @@ services:
 
 
   tcp-data-provider:
-    image: yusufokr0/tcp-platform:1.1.0
+    image: yusufokr0/tcp-data-provider:1.0.0
     container_name: tcp-platform
     ports:
       - "8090:8090"
@@ -91,11 +93,11 @@ services:
 
   rest-data-provider:
     image: yusufokr0/rest-data-provider:1.0.0
-    container_name: rest-data-provider-app
+    container_name: rest-platform
     ports:
       - "8092:8092"
     environment:
-      DATABASE_URL: jdbc:postgresql://postgres-rest-platform:5432/rest_provider_db
+      DATABASE_URL: jdbc:postgresql://rest-platform-db:5432/rest_platform_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -122,7 +124,7 @@ services:
 
 
   kafka-db-consumer:
-    image: yusufokr0/kafka-db-consumer:1.0.1
+    image: yusufokr0/kafka-db-consumer:1.0.0
     container_name: kafka-db-consumer
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-kafka:5432/forex_db
@@ -130,16 +132,32 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_CUSTOM_CONSUMER_GROUP-ID: postgres
       KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
-      KAFKA_CUSTOM_CONSUMER_RAW_GROUP_ID: raw-rates-group
-      KAFKA_CUSTOM_CONSUMER_CALCULATED_TOPIC: calculated-rates
-      KAFKA_CUSTOM_CONSUMER_CALCULATED_GROUP_ID: calculated-rates-group
+      KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
       KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
     networks:
       - forex-net
     depends_on:
       - kafka
       - postgres-kafka
+
+
+
+  kafka-opensearch-consumer:
+    image: yusufokr0/kafka-opensearch-consumer:1.0.0
+    container_name: kafka-opensearch-consumer
+    environment:
+      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_CUSTOM_CONSUMER_GROUP-ID: opensearch
+      KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
+      KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
+      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
+      OPENSEARCH_HOST: opensearch
+      OPENSEARCH_PORT: 9200
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: Yusuf.32Bits
+
 
 
 

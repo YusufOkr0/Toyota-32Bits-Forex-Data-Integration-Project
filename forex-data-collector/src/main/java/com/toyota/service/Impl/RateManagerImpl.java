@@ -45,13 +45,8 @@ public class RateManagerImpl implements RateManager {
     public void handleRateUpdate(String platformName, String rateName, Rate inComingRate) {
         log.info("RateManagerImpl: Handling rate update for {}/{}: {}", platformName, rateName, inComingRate);
 
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);     // GET RATE FROM REDIS FOR ALL PLATFORMS
+        List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);
 
-        /*
-         * Eger Redis'te gelen rateName icin hic veri yoksa ,
-         * ( TTL süresi boyunca Platform baglantisi kesildigi icin veya gelen deger valid sinirda olmadigi icin )
-         * bu rateyi ilk kez gelmis gibi degerlerndirip sistemin kitlenmesini önlemeliyiz.
-         */
         if (existsRates.isEmpty()) {
             log.warn("RateManagerImpl: Cache is empty for rateName '{}'. Treating incoming rate from platform '{}' as the new baseline: {}",
                     rateName, platformName, inComingRate);
@@ -61,7 +56,7 @@ public class RateManagerImpl implements RateManager {
         List<String> cachedBids = existsRates
                 .stream()
                 .map(rate -> rate.getBid().toPlainString())
-                .toList();                                      // GET BIDS AND ASKS SEPARATELY AND CONVERT STRING FORMAT TO EASE CALCULATION
+                .toList();
         List<String> cachedAsks = existsRates
                 .stream()
                 .map(rate -> rate.getAsk().toPlainString())

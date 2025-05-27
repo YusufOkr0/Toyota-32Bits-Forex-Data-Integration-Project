@@ -5,14 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4e455f4-068c-430c-83b9-32abe5b0ac82" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../external-config/main-app/subscribers.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../kafka-opensearch-consumer/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/config/SubscriberConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/config/SubscriberConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/CoordinatorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/cache/Impl/RedisServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/CoordinatorImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/EmailSenderImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RateManagerImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/RestSubscriberImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/toyota/service/Impl/TcpSubscriberImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/subscribers.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/subscribers.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/log4j2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/log4j2.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../rest-data-provider/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../rest-data-provider/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,6 +27,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
+  <component name="MavenRunner">
+    <option name="skipTests" value="true" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -30,27 +38,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.ForexDataCollector.executor": "Run",
-    "Maven.Forex-data-collector [clean].executor": "Run",
-    "Maven.Forex-data-collector [install].executor": "Run",
-    "Maven.Forex-data-collector [package].executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "refactor/forex-data-collector",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project/forex-data-collector",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.0",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.ForexDataCollector.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.Forex-data-collector [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.Forex-data-collector [install].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.Forex-data-collector [package].executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/opensearch-consumer&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/okur_/OneDrive/Masaüstü/32Bits_Forex_Data_Integration_Project/forex-data-collector&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="ForexDataCollector" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.toyota.ForexDataCollector" />
@@ -99,6 +107,8 @@
       <workItem from="1746615911905" duration="46000" />
       <workItem from="1747392387225" duration="5254000" />
       <workItem from="1747426474783" duration="46000" />
+      <workItem from="1748341857453" duration="20000" />
+      <workItem from="1748363900403" duration="40000" />
     </task>
     <servers />
   </component>

@@ -15,7 +15,7 @@ import com.toyota.service.MailSender;
 import com.toyota.service.RateManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.graalvm.polyglot.Context;
+
 
 public class ForexDataCollector {
 
@@ -45,7 +45,7 @@ public class ForexDataCollector {
             );
 
         } catch (RuntimeException e) {
-            log.error("Application run failed. Error: {}",e.getMessage());
+            log.error("Application run failed. Error: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }

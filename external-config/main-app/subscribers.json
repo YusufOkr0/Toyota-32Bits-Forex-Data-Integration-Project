@@ -1,0 +1,36 @@
+[
+  {
+    "platformName": "REST",
+    "className": "com.toyota.service.Impl.RestSubscriberImpl",
+    "exchangeRates": [
+      "USDTRY",
+      "EURUSD",
+      "GBPUSD"
+    ],
+    "connectionRetryCounts": 20,
+    "retryDelaySeconds": 10,
+    "properties": {
+      "username": "YusufOkr0",
+      "password": "YusufOkr0",
+      "baseUrl": "http://rest-platform:8092",
+      "subscriptionDelayMs": 7000
+    }
+  },
+  {
+    "platformName": "TCP",
+    "className": "com.toyota.service.Impl.TcpSubscriberImpl",
+    "exchangeRates": [
+      "USDTRY",
+      "EURUSD",
+      "GBPUSD"
+    ],
+    "connectionRetryCounts": 20,
+    "retryDelaySeconds": 10,
+    "properties": {
+      "username": "admin",
+      "password": "admin",
+      "host": "tcp-platform",
+      "port": 8090
+    }
+  }
+]

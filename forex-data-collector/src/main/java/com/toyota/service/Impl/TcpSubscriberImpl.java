@@ -69,11 +69,11 @@ public class TcpSubscriberImpl implements SubscriberService {
             String serverMessage = reader.readLine();
 
             if (serverMessage == null) {
-                log.warn("Tcp Subscriber: Connection attempt to {} failed: Server closed connection without response.", platformName);
+                log.error("Tcp Subscriber: Connection attempt to {} failed: Server closed connection without response.", platformName);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("ERROR")) {
-                log.warn("Tcp Subscriber: Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
+                log.error("Tcp Subscriber: Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("SUCCESS")) {
@@ -83,7 +83,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             }
 
         } catch (IOException e) {
-            log.warn("Tcp Subscriber: Connection attempt to {} failed. Exception Message: {}.",platformName,e.getMessage());
+            log.error("Tcp Subscriber: Connection attempt to {} failed. Exception Message: {}.",platformName,e.getMessage(),e);
             closeResources();
             coordinator.onConnect(platformName, false);
         }
@@ -134,7 +134,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             }
 
         } catch (IOException e) {
-            log.warn("Tcp Subscriber: Server listening error for platform: {}",platformName);
+            log.error("Tcp Subscriber: Server listening error for platform: {}",platformName,e);
         } finally {
             closeResources();
             coordinator.onDisConnect(platformName);
@@ -166,7 +166,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (writer != null) writer.close();
             if (socket != null) socket.close();
         } catch (IOException e) {
-            log.error("Tcp Subscriber: Error closing connection: {} ",e.getMessage());
+            log.error("Tcp Subscriber: Error closing connection: {} ",e.getMessage(),e);
         } finally {
             socket = null;
             reader = null;

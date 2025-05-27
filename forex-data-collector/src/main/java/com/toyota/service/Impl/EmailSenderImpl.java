@@ -79,7 +79,7 @@ public class EmailSenderImpl implements MailSender {
 
         } catch (MessagingException e) {
             log.error("Failed to send connection failure notification email for platform '{}' to recipients '{}'. Error: {}",
-                    platformName, recipientsTo, e.getMessage());
+                    platformName, recipientsTo, e.getMessage(),e);
         }
     }
 
@@ -131,9 +131,7 @@ public class EmailSenderImpl implements MailSender {
             <p><strong>Recommended Investigation Steps:</strong></p>
             <ul>
               <li>Verify the operational status and accessibility of the '<span class="platform-name">%s</span>' platform externally.</li>
-              <li>Check network connectivity (firewalls, routing) between the application server and the platform.</li>
               <li>Review application logs (especially 'CoordinatorImpl' and subscriber logs for '<span class="platform-name">%s</span>') around the time of failure for specific error messages (e.g., connection refused, timeout, authentication errors).</li>
-              <li>Confirm authentication credentials for the platform are correct, if applicable.</li>
               <li>Monitor the frequency of these alerts to understand the persistence of the problem.</li>
             </ul>
           </div>
