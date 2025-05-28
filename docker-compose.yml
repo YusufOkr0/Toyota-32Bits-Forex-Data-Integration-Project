@@ -13,6 +13,12 @@ services:
       - forex-net
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres-kafka:
     image: postgres
@@ -27,6 +33,12 @@ services:
       - forex-net
     volumes:
       - postgres-data-collector:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   postgres-rest-platform:
     image: postgres
@@ -41,6 +53,12 @@ services:
       - forex-net
     volumes:
       - postgres-rest-provider:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 
 
@@ -53,7 +71,7 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC_RAW: raw-rates
       KAFKA_TOPIC_CALCULATED: calculated-rates
       LOG_LEVEL_TOYOTA: INFO
@@ -64,10 +82,14 @@ services:
     networks:
       - forex-net
     depends_on:
-      - kafka
-      - redis
-      - tcp-data-provider
-      - rest-data-provider
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      tcp-data-provider:
+        condition: service_started
+      rest-data-provider:
+        condition: service_started
 
 
 
@@ -83,7 +105,7 @@ services:
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
       USER_CREDENTIALS: yusuf|pass,admin|admin,32bit|aloha,user1|user1
-      LOG_LEVEL_TOYOTA: TRACE
+      LOG_LEVEL_TOYOTA: INFO
     volumes:
       - ./external-config/tcp-platform:/conf  # MOUNT THE INITIAL CONFIG FILE ON DEMAND
       - tcp-platform-log:/app/tcp-data-provider/logs
@@ -105,51 +127,55 @@ services:
       REDIS_CUSTOM_PORT: 6379
       MINIMUM_RATE_CHANGE: 0.001
       MAXIMUM_RATE_CHANGE: 0.002
-      RATE_UPDATE_INTERVAL: 7000   # RATE UPDATE INTERVAL
+      RATE_UPDATE_INTERVAL: 7000
       SPIKE_PERCENTAGE: 0.011
       SPIKE_INTERVAL: 20
       LOG_LEVEL_TOYOTA: INFO
       SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
       # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
       # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
-    networks:
-      - forex-net
-    depends_on:
-      - postgres-rest-platform
-      - redis
     volumes:
       - rest-platform-log:/app/rest-data-provider/logs
       - ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
+    depends_on:
+      postgres-rest-platform:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - forex-net
 
 
 
   kafka-db-consumer:
-    image: yusufokr0/kafka-db-consumer:1.0.0
+    image: yusufokr0/kafka-db-consumer
     container_name: kafka-db-consumer
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-kafka:5432/forex_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
-      KAFKA_CUSTOM_CONSUMER_GROUP-ID: postgres
+      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CUSTOM_CONSUMER_GROUP_ID: postgres
       KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
       KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
       KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
     networks:
       - forex-net
     depends_on:
-      - kafka
-      - postgres-kafka
+      kafka:
+        condition: service_healthy
+      postgres-kafka:
+        condition: service_healthy
 
 
 
   kafka-opensearch-consumer:
-    image: yusufokr0/kafka-opensearch-consumer:1.0.0
+    image: yusufokr0/kafka-opensearch-consumer
     container_name: kafka-opensearch-consumer
     environment:
-      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:9093
-      KAFKA_CUSTOM_CONSUMER_GROUP-ID: opensearch
+      KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CUSTOM_CONSUMER_GROUP_ID: opensearch
       KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
       KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
       KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
@@ -157,6 +183,13 @@ services:
       OPENSEARCH_PORT: 9200
       OPENSEARCH_USERNAME: admin
       OPENSEARCH_PASSWORD: Yusuf.32Bits
+    depends_on:
+      kafka:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    networks:
+      - forex-net
 
 
 
@@ -186,29 +219,36 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://:9093,EXTERNAL://:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-    depends_on:
-      - zookeeper
-    networks:
-      - forex-net
     volumes:
       - kafka-data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_started
+    networks:
+      - forex-net
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
-    depends_on:
-      - kafka
     ports:
       - "9090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: forex-kafka-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - forex-net
 
@@ -220,15 +260,17 @@ services:
 
   filebeat:
     image: docker.elastic.co/beats/filebeat-oss:7.12.1
-    entrypoint: "filebeat -e -strict.perms=false"   # bypass config file permission check.
     container_name: filebeat
+    entrypoint: "filebeat -e -strict.perms=false"   # bypass config file permission check.
     user: root
     volumes:
       - ./forex-data-collector/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - main-app-log:/var/log/main-app:ro  # only readable
     depends_on:
-      - logstash
-      - forex-data-collector
+      logstash:
+        condition: service_started
+      forex-data-collector:
+        condition: service_started
     networks:
       - forex-net
 
@@ -243,36 +285,43 @@ services:
     volumes:
       - ./forex-data-collector/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     depends_on:
-      - opensearch
+      opensearch:
+        condition: service_healthy
     networks:
       - forex-net
 
   opensearch:
     image: opensearchproject/opensearch:latest
     container_name: opensearch
+    ports:
+      - "9200:9200" # OpenSearch API
+      - "9600:9600" # Performans izleme
     environment:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
       - bootstrap.memory_lock=true
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Yusuf.32Bits
-    ports:
-      - "9200:9200" # OpenSearch API
-      - "9600:9600" # Performans izleme
     networks:
       - forex-net
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "-u", "admin:Yusuf.32Bits", "-f", "https://localhost:9200/_cluster/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 6
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     container_name: opensearch-dashboards
+    ports:
+      - "5601:5601" # OpenSearch Dashboards web arayüzü
     environment:
       - OPENSEARCH_HOSTS=["https://opensearch:9200"]
       - SERVER_HOST=0.0.0.0
       - OPENSEARCH_USERNAME=admin
       - OPENSEARCH_PASSWORD=Yusuf.32Bits
-    ports:
-      - "5601:5601" # OpenSearch Dashboards web arayüzü
     depends_on:
-      - opensearch
+      opensearch:
+        condition: service_healthy
     networks:
       - forex-net
 

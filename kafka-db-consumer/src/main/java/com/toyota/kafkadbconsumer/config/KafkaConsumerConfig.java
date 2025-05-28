@@ -2,7 +2,10 @@ package com.toyota.kafkadbconsumer.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toyota.kafkadbconsumer.dtos.CurrencyPair;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -14,6 +17,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
@@ -22,15 +26,28 @@ import java.util.Map;
 @EnableKafka
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class KafkaConsumerConfig {
 
-    @Value("${kafka.custom.bootstrap-servers}") String bootstrapServer;
-    @Value("${kafka.custom.consumer.group-id}") String consumerGroupId;
-    @Value("${kafka.custom.consumer.raw.topic}") String rawRatesTopicName;
-    @Value("${kafka.custom.consumer.calc.topic}") String calcRatesTopicName;
-    @Value("${kafka.custom.consumer.auto-offset-reset}") String autoOffsetReset;
+    @Value("${kafka.custom.bootstrap-servers}")
+    String bootstrapServer;
+    @Value("${kafka.custom.consumer.group-id}")
+    String consumerGroupId;
+    @Value("${kafka.custom.consumer.raw.topic}")
+    String rawRatesTopicName;
+    @Value("${kafka.custom.consumer.calc.topic}")
+    String calcRatesTopicName;
+    @Value("${kafka.custom.consumer.auto-offset-reset}")
+    String autoOffsetReset;
 
     private final ObjectMapper objectMapper;
+
+    @Bean
+    public KafkaAdmin admin() {
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        return new KafkaAdmin(configs);
+    }
 
     @Bean
     NewTopic topic1() {
@@ -46,7 +63,6 @@ public class KafkaConsumerConfig {
                 .replicas(1)
                 .build();
     }
-
 
     Map<String, Object> consumerProperties(){
         Map<String, Object> props = new HashMap<>();

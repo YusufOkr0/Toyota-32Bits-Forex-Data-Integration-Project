@@ -8,7 +8,7 @@ kafka:
     bootstrap-servers: ${KAFKA_CUSTOM_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       auto-offset-reset: ${KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET:earliest}
-      group-id: ${KAFKA_CUSTOM_CONSUMER_GROUP-ID:opensearch}
+      group-id: ${KAFKA_CUSTOM_CONSUMER_GROUP_ID:opensearch}
       raw:
         topic: ${KAFKA_CUSTOM_CONSUMER_RAW_TOPIC:raw-rates}
       calc:

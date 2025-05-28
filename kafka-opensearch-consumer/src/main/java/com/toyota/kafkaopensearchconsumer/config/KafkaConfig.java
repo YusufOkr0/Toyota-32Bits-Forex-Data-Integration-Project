@@ -3,6 +3,7 @@ package com.toyota.kafkaopensearchconsumer.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toyota.kafkaopensearchconsumer.entity.CurrencyPair;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -14,6 +15,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.ExponentialBackOff;
@@ -28,13 +30,25 @@ public class KafkaConfig {
 
     private final ObjectMapper objectMapper;
 
-    @Value("${kafka.custom.bootstrap-servers}") String bootstrapServer;
-    @Value("${kafka.custom.consumer.group-id}") String consumerGroupId;
-    @Value("${kafka.custom.consumer.raw.topic}") String rawRatesTopicName;
-    @Value("${kafka.custom.consumer.calc.topic}") String calcRatesTopicName;
-    @Value("${kafka.custom.consumer.auto-offset-reset}") String autoOffsetReset;
+
+    @Value("${kafka.custom.bootstrap-servers}")
+    String bootstrapServer;
+    @Value("${kafka.custom.consumer.group-id}")
+    String consumerGroupId;
+    @Value("${kafka.custom.consumer.raw.topic}")
+    String rawRatesTopicName;
+    @Value("${kafka.custom.consumer.calc.topic}")
+    String calcRatesTopicName;
+    @Value("${kafka.custom.consumer.auto-offset-reset}")
+    String autoOffsetReset;
 
 
+    @Bean
+    public KafkaAdmin admin() {
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        return new KafkaAdmin(configs);
+    }
     @Bean
     NewTopic topic1() {
         return TopicBuilder.name(rawRatesTopicName)

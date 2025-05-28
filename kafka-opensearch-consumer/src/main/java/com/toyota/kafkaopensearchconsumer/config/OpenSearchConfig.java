@@ -6,6 +6,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -26,11 +27,15 @@ import java.security.KeyStore;
 @Configuration
 public class OpenSearchConfig {
 
-    @Value("${opensearch.host}") String host;
-    @Value("${opensearch.port}") int port;
+    @Value("${opensearch.host}")
+    String host;
+    @Value("${opensearch.port}")
+    int port;
 
-    @Value("${opensearch.username}") String username;
-    @Value("${opensearch.password}") String password;
+    @Value("${opensearch.username}")
+    String username;
+    @Value("${opensearch.password}")
+    String password;
 
     private final ObjectMapper objectMapper;
 
@@ -76,6 +81,7 @@ public class OpenSearchConfig {
                         httpClientBuilder
                                 .setDefaultCredentialsProvider(credentialsProvider)
                                 .setSSLContext(sslContext)
+                                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 ).build();
 
         OpenSearchTransport transport = new RestClientTransport(
