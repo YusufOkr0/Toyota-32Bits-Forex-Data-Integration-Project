@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -20,7 +21,7 @@ public class Rate {
 
     private BigDecimal ask;
 
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     private BigDecimal minLimit;
 

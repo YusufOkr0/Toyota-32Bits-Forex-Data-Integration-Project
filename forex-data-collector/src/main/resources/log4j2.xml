@@ -30,7 +30,8 @@
             <!--<PatternLayout pattern="${filePattern}"/>-->
 
             <JsonLayout eventEol="true" compact="true"
-                        includeStacktrace="false" includeTimeMillis="true"/>
+                        includeStacktrace="true" includeTimeMillis="true"
+                        properties="true" stacktraceAsString="true"/>
 
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>

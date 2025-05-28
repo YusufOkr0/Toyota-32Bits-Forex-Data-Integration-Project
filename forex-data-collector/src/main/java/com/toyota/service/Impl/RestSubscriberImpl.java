@@ -13,6 +13,7 @@ import com.toyota.service.CoordinatorService;
 import com.toyota.service.SubscriberService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 
 import java.io.IOException;
@@ -89,15 +90,15 @@ public class RestSubscriberImpl implements SubscriberService {
                 log.info("Rest Subscriber: Successfully connected to platform: {}. API Key received.", platformName);
                 coordinator.onConnect(platformName, true);
             } else {
-                log.warn("Rest Subscriber: Authentication failed for platform: {}. HTTP status: {}", platformName, authResponse.statusCode());
+                log.error("Rest Subscriber: Authentication failed for platform: {}. HTTP status: {}", platformName, authResponse.statusCode());
                 coordinator.onConnect(platformName, false);
             }
 
         } catch (IOException e) {
-            log.warn("Rest Subscriber: Failed to connect to platform: {} Exception Message: {}.", platformName, e.getMessage());
+            log.error("Rest Subscriber: Failed to connect to platform: {}.", platformName,e);
             coordinator.onConnect(platformName, false);
         } catch (InterruptedException e) {
-            log.warn("Rest Subscriber: Connect process interrupted for platform: {} Exception Message: {}.", platformName, e.getMessage());
+            log.error("Rest Subscriber: Connect process interrupted for platform: {}.", platformName,e);
             Thread.currentThread().interrupt();
             coordinator.onConnect(platformName, false);
         }
@@ -171,45 +172,55 @@ public class RestSubscriberImpl implements SubscriberService {
 
     private Runnable createSubscribeJob(String platformName, String rateName, HttpRequest request) {
         return () -> {
-            log.trace("Rest Subscriber: Fetching rate: {} for platform: {}", rateName, platformName);
+            long startTime = System.currentTimeMillis();
 
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .orTimeout(5, TimeUnit.SECONDS)
                     .thenAccept(response -> {
+                        long endTime = System.currentTimeMillis();
+                        long responseTimeMs = endTime - startTime;
+                        ThreadContext.put("responseTimeMs", String.valueOf(responseTimeMs));
+
                         int statusCode = response.statusCode();
                         if (statusCode == 200) {
                             try {
-                                Rate rate = objectMapper.readValue(response.body(), Rate.class);
-
+                                log.info("Rate {} on platform {} fetched [responseTimeMs={}]", rateName, platformName, responseTimeMs);
+                                Rate rate = objectMapper.readValue(
+                                        response.body(),
+                                        Rate.class
+                                );
                                 if (receivedRates.contains(rateName)) {
                                     coordinator.onRateUpdate(platformName, rateName, rate);
                                 } else {
                                     receivedRates.add(rateName);
                                     coordinator.onRateAvailable(platformName, rateName, rate);
                                 }
-
                             } catch (IOException e) {
-                                log.warn("Rest Subscriber: Failed to parse rate response for {}: {}", rateName, e.getMessage());
+                                log.error("Rest Subscriber: Failed to parse rate response for {}: {}", rateName, e.getMessage(),e);
                                 handleConnectionFailure(platformName);
                             }
                         } else {
-                            log.warn("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, statusCode);
+                            log.error("Rest Subscriber: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, statusCode);
                             handleConnectionFailure(platformName);
                         }
                     })
                     .exceptionally(ex -> {
+                        long endTime = System.currentTimeMillis();
+                        long responseTimeMs = endTime - startTime;
+                        ThreadContext.put("responseTimeMs", String.valueOf(responseTimeMs));
+
                         if (ex instanceof TimeoutException || (ex.getCause() instanceof TimeoutException)) {
-                            log.warn("Rest Subscriber: Timeout occurred for rate: {} on platform: {}. Cancelling subscription...", rateName, platformName);
+                            log.error("Rest Subscriber: Timeout occurred for rate: {} on platform: {}. Cancelling subscription...", rateName, platformName,ex);
                             handleTimeoutException(platformName, rateName);
                         } else {
-                            log.warn("Rest Subscriber: Exception while fetching rate: {} on platform: {}: {}", rateName, platformName, ex.getMessage());
+                            log.error("Rest Subscriber: Exception while fetching rate: {} on platform: {}. Cancelling all subscriptions.: {}", rateName, platformName, ex.getMessage(),ex);
                             handleConnectionFailure(platformName);
                         }
+                        ThreadContext.clearMap();
                         return null;
                     });
         };
     }
-
 
 
     // NOTIFY COORDINATOR ON TIMEOUT EXCEPTION IN ORDER TO RE-SUBSCRIBE TO SPECIFIC RATE WITH DELAY
@@ -217,8 +228,7 @@ public class RestSubscriberImpl implements SubscriberService {
         ScheduledFuture<?> job = activeSubscriptions.remove(rateName);
         if (job != null) {
             job.cancel(true);
-            log.warn("Rest Subscriber: Subscription to rate {} on platform {} has been cancelled due to timeout.", rateName, platformName);
-            coordinator.onUnsubscribe(platformName,rateName);
+            coordinator.onUnsubscribe(platformName, rateName);
         }
     }
 
@@ -226,7 +236,6 @@ public class RestSubscriberImpl implements SubscriberService {
     private void handleConnectionFailure(String platformName) {
         synchronized (disconnectLock) {
             if (!activeSubscriptions.isEmpty()) {
-                log.warn("Rest Subscriber: Handling connection failure for platform: {}. Cancelling all subscriptions.", platformName);
                 activeSubscriptions.forEach((rateName, job) -> job.cancel(false));
                 activeSubscriptions.clear();
                 coordinator.onDisConnect(platformName);

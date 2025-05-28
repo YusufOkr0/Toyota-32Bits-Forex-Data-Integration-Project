@@ -173,7 +173,7 @@ public class CoordinatorImpl implements CoordinatorService {
 
 
     private void loadSubscribers() {
-        try (InputStream jsonFile = getInputStream(subscriberConfigPath)) {
+        try (InputStream jsonFile = getSubscribersJsonFile(subscriberConfigPath)) {
             if (jsonFile == null) {
                 log.error("Coordinator: Subscriber configuration file '{}' not found.", subscriberConfigPath);
                 throw new ConfigFileNotFoundException(String.format("Configuration file '%s' not found.", subscriberConfigPath));
@@ -229,7 +229,7 @@ public class CoordinatorImpl implements CoordinatorService {
     }
 
 
-    private InputStream getInputStream(String path) throws IOException {
+    private InputStream getSubscribersJsonFile(String path) throws IOException {
         File file = new File(path);
         if (file.exists() && file.isFile()) {
             log.info("Coordinator: Loading subscribers from external file: {}", path);

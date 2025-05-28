@@ -1,19 +1,18 @@
-package com.toyota.kafkadbconsumer.dtos;
+package com.toyota.kafkaopensearchconsumer.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RawRateDto {
+@ToString
+public class CurrencyPair {
     @JsonProperty("name")
     private String name;
 
@@ -24,5 +23,5 @@ public class RawRateDto {
     private BigDecimal ask;
 
     @JsonProperty("timestamp")
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 }

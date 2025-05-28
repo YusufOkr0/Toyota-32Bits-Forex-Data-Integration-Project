@@ -7,6 +7,7 @@
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/data-collector/pom.xml" />
         <option value="$PROJECT_DIR$/../kafka-db-consumer/pom.xml" />
+        <option value="$PROJECT_DIR$/rest-data-provider/pom.xml" />
       </list>
     </option>
   </component>

@@ -1,9 +1,9 @@
 package com.toyota.kafkadbconsumer.service;
 
-import com.toyota.kafkadbconsumer.dtos.CalculatedRateDto;
-import com.toyota.kafkadbconsumer.dtos.RawRateDto;
+import com.toyota.kafkadbconsumer.dtos.CurrencyPair;
 
 public interface ConsumerService {
-    void consumeRawRate(RawRateDto rawRateDto);
-    void consumeCalculatedRate(CalculatedRateDto calculatedRateDto);
+    void consumeRawRate(CurrencyPair currencyPair);
+
+    void consumeCalculatedRate(CurrencyPair currencyPair);
 }
