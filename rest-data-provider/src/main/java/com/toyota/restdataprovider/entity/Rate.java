@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter @Setter
+@Builder
 @RedisHash(value = "rest_platform_rates")
 public class Rate {
 

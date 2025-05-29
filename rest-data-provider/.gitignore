@@ -5,6 +5,7 @@ target/
 !**/src/test/**/target/
 
 logs
+rest-data-provider
 
 ### STS ###
 .apt_generated

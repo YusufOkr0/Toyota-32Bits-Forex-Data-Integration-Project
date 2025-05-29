@@ -22,7 +22,7 @@ class PythonCalculatorTest {
 
 
     @Test
-    void whenInComingRateIsValid_ThenReturnTrue(){
+    void whenIncomingRateDiffersByLessThanOnePercent_ThenReturnTrue(){
 
         List<String> cachedBids = List.of("99.0", "100.0");
         List<String> cachedAsks = List.of("100.0", "101.0");
@@ -36,13 +36,12 @@ class PythonCalculatorTest {
                 cachedAsks
         );
 
-        Assertions.assertTrue(isValid, "Incoming rate should be valid as it is within 1% of the reference mid.");
+        Assertions.assertTrue(isValid);
 
     }
 
-
     @Test
-    void whenInComingRateIsInvalid_ThenReturnFalse(){
+    void whenIncomingRateDiffersByMoreThanOnePercent_ThenReturnFalse(){
 
         List<String> cachedBids = List.of("99.0", "100.0");
         List<String> cachedAsks = List.of("100.0", "101.0");
