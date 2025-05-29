@@ -19,6 +19,7 @@
         <log4j2-version>2.24.3</log4j2-version>
         <email-sender>2.0.1</email-sender>
         <graalvm-polyglot-version>24.2.1</graalvm-polyglot-version>
+        <junit-version>5.12.2</junit-version>
     </properties>
 
 
@@ -71,6 +72,19 @@
             <artifactId>python</artifactId>
             <version>${graalvm-polyglot-version}</version>
             <type>pom</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-version}</version>
+            <scope>test</scope>
         </dependency>
 
 
