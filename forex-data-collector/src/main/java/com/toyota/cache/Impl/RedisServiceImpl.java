@@ -10,7 +10,6 @@ import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
 import com.toyota.exception.ConnectionException;
 import org.apache.logging.log4j.LogManager;
-
 import org.apache.logging.log4j.Logger;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -19,6 +18,7 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +27,9 @@ public class RedisServiceImpl implements CacheService {
     private static final Logger logger = LogManager.getLogger(RedisServiceImpl.class);
 
     private static final long TTL_IN_SECONDS = 300L;
-    private static final String RAW_RATES_KEY_PREFIX = "RawRates";
-    private static final String CALCULATED_RATES_KEY_PREFIX = "CalculatedRates";
+    private static final String RAW_RATES_KEY_PREFIX = "RAW_RATES";
+    private static final String CALCULATED_RATES_KEY_PREFIX = "CALCULATED_RATES";
+    public static final String USD_TRY_MID_KEY = "USD_TRY_MID";
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
@@ -42,7 +43,7 @@ public class RedisServiceImpl implements CacheService {
     }
 
     @Override
-    public void saveRawRate(String platformName, String rateName, Rate rate) {  // RawRates::TCP::USDTRY
+    public void saveRawRate(String platformName, String rateName, Rate rate) {
 
         String redisKey = RAW_RATES_KEY_PREFIX + "::" + platformName + "::" + rateName;
         try (Jedis jedis = jedisPool.getResource()) {
@@ -53,7 +54,7 @@ public class RedisServiceImpl implements CacheService {
             logger.debug("RedisServiceImpl: Successfully saved raw rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save raw rates to the redis. Exception Message: {}.", e.getMessage(),e);
+            logger.error("RedisServiceImpl: Error when save raw rates to the redis. Exception Message: {}.", e.getMessage(), e);
         }
     }
 
@@ -68,7 +69,7 @@ public class RedisServiceImpl implements CacheService {
             jedis.setex(redisKey, TTL_IN_SECONDS, rateInJson);
             logger.debug("RedisServiceImpl: Successfully saved calculated rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save calculated rates to the redis. Exception Message: {}", e.getMessage(),e);
+            logger.error("RedisServiceImpl: Error when save calculated rates to the redis. Exception Message: {}", e.getMessage(), e);
         }
     }
 
@@ -91,7 +92,7 @@ public class RedisServiceImpl implements CacheService {
                             rates.add(objectMapper.readValue(json, Rate.class));
 
                         } catch (JsonProcessingException e) {
-                            logger.error("RedisServiceImpl: Could not parse JSON for key: {}. Exception Message: {}", key, e.getMessage(),e);
+                            logger.error("RedisServiceImpl: Could not parse JSON for key: {}. Exception Message: {}", key, e.getMessage(), e);
                         }
                     }
                 }
@@ -99,11 +100,34 @@ public class RedisServiceImpl implements CacheService {
             } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
 
         } catch (JedisConnectionException e) {
-            logger.error("RedisServiceImpl: Redis connection error : {}", e.getMessage(),e);
+            logger.error("RedisServiceImpl: Redis connection error : {}", e.getMessage(), e);
         }
 
         logger.debug("RedisServiceImpl: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
         return rates;
+    }
+
+    @Override
+    public void saveUsdTryMidValue(BigDecimal usdMidValue) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.setex(
+                    USD_TRY_MID_KEY,
+                    TTL_IN_SECONDS,
+                    usdMidValue.toPlainString()
+            );
+        }
+    }
+
+    @Override
+    public BigDecimal getUsdTryMidValue() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String value = jedis.get(USD_TRY_MID_KEY);
+            if (value != null) {
+                return new BigDecimal(value);
+            }
+        }
+
+        return null;
     }
 
 

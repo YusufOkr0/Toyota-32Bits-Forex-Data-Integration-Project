@@ -28,57 +28,51 @@ public class RateManagerImpl implements RateManager {
     }
 
 
-
     public void handleFirstInComingRate(String platformName, String rateName, Rate inComingRate) {
         log.info("RateManagerImpl: Handling first incoming rate for {}/{}: {}", platformName, rateName, inComingRate);
 
-        redisService.saveRawRate(
-                platformName,
-                rateName,
-                inComingRate
-        );
+        redisService.saveRawRate(platformName, rateName, inComingRate);
         kafkaService.sendRawRate(inComingRate);
-    }
 
+        if (rateName.equals("USDTRY")) {
+            calculateAndSaveUsdTryMidValue();
+        }
+    }
 
 
     public void handleRateUpdate(String platformName, String rateName, Rate inComingRate) {
         log.info("RateManagerImpl: Handling rate update for {}/{}: {}", platformName, rateName, inComingRate);
 
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(rateName);
+        List<Rate> cachedRates = redisService.getAllRawRatesByRateName(rateName);
 
-        if (existsRates.isEmpty()) {
+        if (cachedRates.isEmpty()) {
             log.warn("RateManagerImpl: Cache is empty for rateName '{}'. Treating incoming rate from platform '{}' as the new baseline: {}",
                     rateName, platformName, inComingRate);
             handleFirstInComingRate(platformName, rateName, inComingRate);
             return;
         }
-        List<String> cachedBids = existsRates
-                .stream()
-                .map(rate -> rate.getBid().toPlainString())
-                .toList();
-        List<String> cachedAsks = existsRates
-                .stream()
-                .map(rate -> rate.getAsk().toPlainString())
-                .toList();
+
+        List<String> cachedBids = cachedRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
+        List<String> cachedAsks = cachedRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
 
         String newBid = inComingRate.getBid().toPlainString();
         String newAsk = inComingRate.getAsk().toPlainString();
 
 
         if (calculationService.isInComingRateValid(newBid, newAsk, cachedBids, cachedAsks)) {
-        log.info("RateManagerImpl: Incoming rate: {} from platform: {} is valid. Saving Redis and sending to Kafka.", rateName,platformName);
+            log.info("RateManagerImpl: Incoming rate: {} from platform: {} is valid. Saving Redis and sending to Kafka.", rateName, platformName);
             redisService.saveRawRate(platformName, rateName, inComingRate);
             kafkaService.sendRawRate(inComingRate);
 
             if (rateName.equals("USDTRY")) {
-                calculateAndSaveUsdTry();  // CHECK LATER.  DO I NEED TO UPDATE DEPENDENT RATES WHEN USD/TRY UPDATE ???
+                calculateAndSaveUsdTry();           // CHECK LATER.  DO I NEED TO UPDATE DEPENDENT RATES WHEN USD/TRY UPDATE ???
+                calculateAndSaveUsdTryMidValue();
             } else {
                 calculateAndSaveRatesDependentOnUsdTry(rateName);
             }
 
         } else {
-            log.warn("RateManagerImpl: Invalid incoming rate detected and ignored: {}", inComingRate);
+            log.warn("RateManagerImpl: Invalid rate detected and ignored: {}", inComingRate);
         }
     }
 
@@ -102,30 +96,24 @@ public class RateManagerImpl implements RateManager {
                 cachedUsdTryBids,
                 cachedUsdTryAsks
         );
-        log.info("RateManagerImpl: Calculated USDTRY rate: {}", calculatedRate);
-        redisService.saveCalculatedRate(
-                rateName,
-                calculatedRate
-        );
-        kafkaService.sendCalculatedRate(calculatedRate);
+
+        if(calculatedRate != null){
+            log.info("RateManagerImpl: Calculated USDTRY rate: {}", calculatedRate);
+
+            redisService.saveCalculatedRate(rateName,calculatedRate);
+            kafkaService.sendCalculatedRate(calculatedRate);
+        }
     }
 
 
+    private void calculateAndSaveUsdTryMidValue() {
 
-    private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName) {
-        log.debug("RateManagerImpl: Attempting calculation for '{}'.", updatedRateName);
-
-        List<Rate> existsRates = redisService.getAllRawRatesByRateName(updatedRateName);
         List<Rate> existsUsdTryRates = redisService.getAllRawRatesByRateName("USDTRY");
 
-        if (existsRates.isEmpty() || existsUsdTryRates.isEmpty()) {
-            log.warn("RateManagerImpl: Missing required rates for calculation. RateName: {}, USDTRY available: {}",
-                    updatedRateName, !existsUsdTryRates.isEmpty());
+        if (existsUsdTryRates.isEmpty()) {
+            log.warn("RateManagerImpl: USD/TRY Mid value calculation skipped. No rates found in cache.");
             return;
         }
-
-        List<String> cachedBids = existsRates.stream().map(rate -> rate.getBid().toString()).toList();
-        List<String> cachedAsks = existsRates.stream().map(rate -> rate.getAsk().toString()).toList();
 
         List<String> cachedUsdTryBids = existsUsdTryRates.stream().map(rate -> rate.getBid().toPlainString()).toList();
         List<String> cachedUsdTryAsks = existsUsdTryRates.stream().map(rate -> rate.getAsk().toPlainString()).toList();
@@ -135,7 +123,29 @@ public class RateManagerImpl implements RateManager {
                 cachedUsdTryAsks
         );
 
-        String derivedRate = updatedRateName.replace("USD","TRY");
+        if (usdTryMid != null) {
+            redisService.saveUsdTryMidValue(usdTryMid);
+        }
+
+    }
+
+
+    private void calculateAndSaveRatesDependentOnUsdTry(String updatedRateName) {
+        log.debug("RateManagerImpl: Attempting calculation for '{}'.", updatedRateName);
+
+        List<Rate> cachedRates = redisService.getAllRawRatesByRateName(updatedRateName);
+        BigDecimal usdTryMid = redisService.getUsdTryMidValue();
+
+        if (cachedRates.isEmpty() || usdTryMid == null) {
+            log.warn("RateManagerImpl: Missing required rates for {} calculation. ",updatedRateName);
+            return;
+        }
+
+        List<String> cachedBids = cachedRates.stream().map(rate -> rate.getBid().toString()).toList();
+        List<String> cachedAsks = cachedRates.stream().map(rate -> rate.getAsk().toString()).toList();
+
+
+        String derivedRate = updatedRateName.replace("USD", "TRY"); // GBPUSD -> GBPTRY or any other usd based currency pair.
 
         CalculatedRate calculatedRate = calculationService.calculateRateDependentOnUsdTry(
                 derivedRate,
@@ -143,14 +153,14 @@ public class RateManagerImpl implements RateManager {
                 cachedBids,
                 cachedAsks
         );
-        log.info("RateManagerImpl: Calculated dependent rate: {}", calculatedRate);
 
-        redisService.saveCalculatedRate(
-                derivedRate,
-                calculatedRate
-        );
+        if(calculatedRate != null){
+            log.info("RateManagerImpl: Calculated dependent rate: {}", calculatedRate);
 
-        kafkaService.sendCalculatedRate(calculatedRate);
+            redisService.saveCalculatedRate(derivedRate,calculatedRate);
+            kafkaService.sendCalculatedRate(calculatedRate);
+        }
+
     }
 
 
