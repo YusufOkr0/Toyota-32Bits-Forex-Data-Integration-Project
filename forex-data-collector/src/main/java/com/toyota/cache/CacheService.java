@@ -2,6 +2,8 @@ package com.toyota.cache;
 
 import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -42,5 +44,14 @@ public interface CacheService {
      * @return a list of matching raw exchange rate entries
      */
     List<Rate> getAllRawRatesByRateName(String rateName);
+
+
+    void saveUsdTryMidValue(BigDecimal usdMidValue);
+
+
+    BigDecimal getUsdTryMidValue();
+
+
+
 
 }

@@ -39,15 +39,7 @@ public class CoordinatorImpl implements CoordinatorService {
         this.rateManager = rateManager;
 
         this.subscriberConfigPath = applicationConfig.getValue("subscribers.config.path");
-
-        this.executorService = new ThreadPoolExecutor(
-                2,
-                10,
-                1,
-                TimeUnit.MINUTES,
-                new LinkedBlockingDeque<>(40)
-        );
-
+        this.executorService = new ThreadPoolExecutor(6,10,1,TimeUnit.MINUTES,new LinkedBlockingDeque<>(40));
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
 

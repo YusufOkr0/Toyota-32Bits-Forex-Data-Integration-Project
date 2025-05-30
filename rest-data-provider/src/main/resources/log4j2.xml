@@ -5,8 +5,8 @@
 
         <Property name="logDir">rest-data-provider/logs</Property>
         <Property name="rollingFileSize">5 MB</Property>
-        <Property name="rollingMaxFiles">7</Property>
-        <Property name="deleteMaxAge">P30D</Property>
+        <Property name="rollingMaxFiles">5</Property>
+        <Property name="deleteMaxAge">P5D</Property>
 
         <Property name="filePattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} - %msg%n%throwable</Property>
         <!--<Property name="ConsolePattern">%d{yyyy-MM-dd HH:mm:ss.SSS}  %-5level  [%t]  -  %logger{36}  -  %msg%n%throwable</Property>-->
