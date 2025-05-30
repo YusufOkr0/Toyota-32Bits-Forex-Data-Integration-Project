@@ -89,8 +89,8 @@ public class AuthServiceImpl implements AuthService {
                     loginRequest.getPassword()
             );
 
-            Authentication authentication = authenticationManager.authenticate(authToken);   // user wants to login. authentication provider will implement authenticate function.
-                                                                                            // make a custom provider or use exist ones. (ex = DAO ...)
+            Authentication authentication = authenticationManager.authenticate(authToken);
+
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String jwtToken = jwtUtil.generateJwtToken(userDetails);
 

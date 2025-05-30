@@ -1,6 +1,8 @@
 package com.toyota.restdataprovider.service;
 
+import com.toyota.restdataprovider.dtos.request.LoginRequest;
 import com.toyota.restdataprovider.dtos.request.RegisterRequest;
+import com.toyota.restdataprovider.dtos.response.LoginResponse;
 import com.toyota.restdataprovider.dtos.response.RegisterResponse;
 import com.toyota.restdataprovider.entity.ForexUser;
 import com.toyota.restdataprovider.entity.PricingPlan;
@@ -17,9 +19,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +37,10 @@ public class AuthServiceImplTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
+    @Mock
+    private Authentication authentication;
+    @Mock
+    private UserDetails userDetails;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -51,10 +61,8 @@ public class AuthServiceImplTest {
         String password = "testPassword";
         String encodedPassword = "encodedPassword";
         PricingPlan pricingPlan = PricingPlan.STANDARD;
-        LocalDateTime now = LocalDateTime.now();
 
         RegisterRequest registerRequest = createRegisterRequest(email, username, password, pricingPlan.name());
-
         RegisterResponse registerResponse = RegisterResponse.builder()
                 .username(username)
                 .pricingPlan(pricingPlan.name())
@@ -74,6 +82,7 @@ public class AuthServiceImplTest {
         assertEquals(username, response.getUsername());
         assertEquals(pricingPlan.name(), response.getPricingPlan());
 
+
         verify(userRepository, times(1)).findByUsername(username);
         verify(userRepository, times(1)).findByEmail(email);
         verify(passwordEncoder, times(1)).encode(password);
@@ -87,14 +96,11 @@ public class AuthServiceImplTest {
         String email = "test@test.com";
         String username = "testUsername";
         String password = "testPassword";
-        String encodedPassword = "encodedPassword";
         PricingPlan pricingPlan = PricingPlan.STANDARD;
-        LocalDateTime now = LocalDateTime.now();
 
         RegisterRequest registerRequest = createRegisterRequest(email, username, password, pricingPlan.name());
-        ForexUser forexUser = createForexUser(email, username, encodedPassword, pricingPlan, now, now);
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(forexUser));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(new ForexUser()));
 
         assertThrows(
                 UsernameAlreadyExistsException.class,
@@ -102,6 +108,7 @@ public class AuthServiceImplTest {
         );
 
         verify(userRepository, times(1)).findByUsername(username);
+
         verify(userRepository, never()).findByEmail(anyString());
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(ForexUser.class));
@@ -114,16 +121,11 @@ public class AuthServiceImplTest {
         String email = "test@test.com";
         String username = "testUsername";
         String password = "testPassword";
-        String encodedPassword = "encodedPassword";
         PricingPlan pricingPlan = PricingPlan.STANDARD;
-        LocalDateTime now = LocalDateTime.now();
 
         RegisterRequest registerRequest = createRegisterRequest(email, username, password, pricingPlan.name());
-        ForexUser forexUser = createForexUser(email, username, encodedPassword, pricingPlan, now, now);
-
-
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(forexUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(new ForexUser()));
 
 
         assertThrows(
@@ -148,7 +150,6 @@ public class AuthServiceImplTest {
 
         RegisterRequest registerRequest = createRegisterRequest(email, username, password, pricingPlan);
 
-
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
@@ -169,10 +170,50 @@ public class AuthServiceImplTest {
     void whenLoginWithValidCredentials_ThenReturnLoginResponse(){
         String username = "testUsername";
         String password = "testPassword";
+        String expectedJwtToken = "THIS_IS_A_JWT_TOKEN";
+
+        LoginRequest loginRequest = new LoginRequest(username, password);
 
 
-        // TODO: CONTINUE :))
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(jwtUtil.generateJwtToken(userDetails)).thenReturn(expectedJwtToken);
+
+
+        LoginResponse response = authService.login(loginRequest);
+
+
+        assertNotNull(response);
+        assertEquals(expectedJwtToken, response.getApiKey());
+
+        verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(authentication, times(1)).getPrincipal();
+        verify(jwtUtil, times(1)).generateJwtToken(userDetails);
     }
+
+
+    @Test
+    void whenLoginWithInvalidCredentials_ThenThrowBadCredentialsException() {
+        String username = "invalidUsername";
+        String password = "orInvalidPassword";
+        LoginRequest loginRequest = new LoginRequest(username, password);
+
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new AuthenticationException("Username or password not valid") {});
+
+        BadCredentialsException ex = assertThrows(
+                BadCredentialsException.class,
+                () -> authService.login(loginRequest)
+        );
+        assertEquals("Invalid credentials: Username or password not valid",ex.getMessage());
+
+
+        verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(jwtUtil, never()).generateJwtToken(any());
+    }
+
 
 
 
@@ -188,14 +229,5 @@ public class AuthServiceImplTest {
                 .build();
     }
 
-    private ForexUser createForexUser(String email, String username, String password, PricingPlan pricingPlan, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        return ForexUser.builder()
-                .email(email)
-                .username(username)
-                .password(password)
-                .pricingPlan(pricingPlan)
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .build();
-    }
+
 }
