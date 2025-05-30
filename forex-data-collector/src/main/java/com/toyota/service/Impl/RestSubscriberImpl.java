@@ -107,14 +107,14 @@ public class RestSubscriberImpl implements SubscriberService {
 
     @Override
     public void subscribe(String platformName, String rateName) {
-        log.info("unSubscribe: Subscribing to rate: {} on platform: {}", rateName, platformName);
+        log.info("subscribe: Subscribing to rate: {} on platform: {}", rateName, platformName);
 
         if (apiKey == null) {
-            log.warn("unSubscribe: Cannot subscribe to rate: {}. API key is null.", rateName);
+            log.warn("subscribe: Cannot subscribe to rate: {}. API key is null.", rateName);
             return;
         }
         if (activeSubscriptions.containsKey(rateName)) {
-            log.warn("unSubscribe: Subscription to rate: {} already exists.", rateName);
+            log.warn("subscribe: Subscription to rate: {} already exists.", rateName);
             return;
         }
 

@@ -131,7 +131,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             }
 
         } catch (IOException e) {
-            log.error("connect: Server listening error for platform: {}",platformName,e);
+            log.error("listenToIncomingRates: Server listening error for platform: {}",platformName,e);
         } finally {
             closeResources();
             coordinator.onDisConnect(platformName);

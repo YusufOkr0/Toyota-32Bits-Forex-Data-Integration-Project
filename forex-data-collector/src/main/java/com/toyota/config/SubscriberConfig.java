@@ -9,7 +9,7 @@ import java.util.Map;
 public class SubscriberConfig {
     private String platformName;
     private String className;
-    private int connectionRetryCounts;
+    private int connectionRetryLimit;
     private int retryDelaySeconds;
     private List<String> exchangeRates;
     private Map<String,Object> properties;
@@ -64,12 +64,12 @@ public class SubscriberConfig {
         this.properties = properties;
     }
 
-    public int getConnectionRetryCounts() {
-        return connectionRetryCounts;
+    public int getConnectionRetryLimit() {
+        return connectionRetryLimit;
     }
 
-    public void setConnectionRetryCounts(int connectionRetryCounts) {
-        this.connectionRetryCounts = connectionRetryCounts;
+    public void setConnectionRetryLimit(int connectionRetryLimit) {
+        this.connectionRetryLimit = connectionRetryLimit;
     }
 
     public int getRetryDelaySeconds() {

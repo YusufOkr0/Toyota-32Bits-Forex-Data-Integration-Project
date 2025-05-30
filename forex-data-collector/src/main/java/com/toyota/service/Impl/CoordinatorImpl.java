@@ -28,11 +28,12 @@ public class CoordinatorImpl implements CoordinatorService {
 
     private final String subscriberConfigPath;
 
-    private final Map<String, SubscriberService> subscribers;
-    private final Map<String, Integer> retryCounts;
-    private final RateManager rateManager;
     private final MailSender mailSender;
+    private final RateManager rateManager;
+    private final Map<String, Integer> retryCounts;
     private final ThreadPoolExecutor executorService;
+    private final ScheduledExecutorService scheduledRetryService;
+    private final Map<String, SubscriberService> subscribers;
 
     public CoordinatorImpl(RateManager rateManager, MailSender mailSender, ApplicationConfig applicationConfig) {
         log.info("Coordinator: Initializing Coordinator...");
@@ -40,7 +41,8 @@ public class CoordinatorImpl implements CoordinatorService {
         this.rateManager = rateManager;
 
         this.subscriberConfigPath = applicationConfig.getValue("subscribers.config.path");
-        this.executorService = new ThreadPoolExecutor(6,10,1,TimeUnit.MINUTES,new LinkedBlockingDeque<>(40));
+        this.executorService = new ThreadPoolExecutor(6, 10, 1, TimeUnit.MINUTES, new LinkedBlockingDeque<>(40));
+        this.scheduledRetryService = Executors.newScheduledThreadPool(2);
         this.subscribers = new ConcurrentHashMap<>();
         this.retryCounts = new ConcurrentHashMap<>();
 
@@ -56,6 +58,8 @@ public class CoordinatorImpl implements CoordinatorService {
         executorService.execute(() -> {
             if (status) {
                 log.info("onConnect: Platform '{}' connection status: {}", platformName, "CONNECTED");
+
+                retryCounts.put(platformName,0);    // set connection retry count to 0 when connection established.
 
                 SubscriberService subscriber = subscribers.get(platformName);
                 SubscriberConfig subscriberConfig = subscriber.getConfig();
@@ -99,60 +103,49 @@ public class CoordinatorImpl implements CoordinatorService {
         });
     }
 
+    /*
+    * In this method, Maybe i can externalize the 'delayTimeInSeconds' value for each subscriber.
+    * in addition to this, i can schedule the subscription tasks with a different executor service.
+    * i won't go into more detail and will leave it like this.
+    * */
     @Override
     public void onUnsubscribe(String platformName, String rateName) {
         executorService.execute(() -> {
             long delayTimeInSeconds = 5;
-            log.error("onUnsubscribe: Platform '{}' unsubscribe from rate '{}'. Retrying subscription to rate after {} seconds ... ", platformName, rateName, delayTimeInSeconds);
+            log.error("onUnsubscribe: Platform '{}' unsubscribe from rate '{}'. Scheduling retry subscription to rate after {} seconds ... ", platformName, rateName, delayTimeInSeconds);
 
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(delayTimeInSeconds));
-
+            scheduledRetryService.schedule(() -> {
                 SubscriberService subscriber = subscribers.get(platformName);
-                if (subscriber != null) {
-                    subscriber.subscribe(platformName, rateName);
-                }
-            } catch (InterruptedException e) {
-                log.error("onUnsubscribe: Retrying subscription attempt for rate '{}' on platform {} was interrupted.", rateName, platformName, e);
-                Thread.currentThread().interrupt();
-            }
+                subscriber.subscribe(platformName,rateName);
+            }, delayTimeInSeconds, TimeUnit.SECONDS);
+
         });
     }
 
 
     private void retryToConnectWithDelay(String platformName) {
-        SubscriberConfig subscriberConfig = subscribers.get(platformName).getConfig();
+        SubscriberService subscriberService = subscribers.get(platformName);
 
-        int connectionRetryCounts = subscriberConfig.getConnectionRetryCounts();
-        int retryDelaySeconds = subscriberConfig.getRetryDelaySeconds();
+        int connectionRetryLimit = subscriberService.getConfig().getConnectionRetryLimit();
+        int retryDelaySeconds = subscriberService.getConfig().getRetryDelaySeconds();
 
-        int retryCount = retryCounts.getOrDefault(platformName, 0);
+        int currentRetryCount = retryCounts.getOrDefault(platformName, 0);
 
-        if (retryCount >= connectionRetryCounts) {
-            log.error("retryToConnectWithDelay: Retry limit {} reached for platform '{}'. Sending notification email, but will continue retrying...",
-                    connectionRetryCounts, platformName);
-
-            mailSender.sendConnectionFailureNotification(platformName, connectionRetryCounts, retryDelaySeconds);
-
+        if (currentRetryCount >= connectionRetryLimit) {
+            log.error("retryToConnectWithDelay: Retry limit {} reached for platform '{}'. Sending notification email, but will continue retrying...", connectionRetryLimit, platformName);
+            mailSender.sendConnectionFailureNotification(platformName, connectionRetryLimit, retryDelaySeconds);
             retryCounts.put(platformName, 0);
         } else {
-            retryCounts.put(platformName, retryCount + 1);
+            retryCounts.put(platformName, currentRetryCount + 1);
         }
 
-        try {
-            log.warn("retryToConnectWithDelay: Retrying connection to '{}' in {} seconds (Attempt {}/{})...",
-                    platformName, retryDelaySeconds, retryCount + 1, connectionRetryCounts);
+        log.warn("retryToConnectWithDelay: Retrying connection to '{}' in {} seconds (Attempt {}/{})...", platformName, retryDelaySeconds, currentRetryCount + 1, connectionRetryLimit);
 
-            Thread.sleep(TimeUnit.SECONDS.toMillis(retryDelaySeconds));
+        scheduledRetryService.schedule(
+                () -> subscriberService.connect(platformName),  // After a while take a shot.
+                retryDelaySeconds,
+                TimeUnit.SECONDS);
 
-            SubscriberService subscriber = subscribers.get(platformName);
-            if (subscriber != null) {
-                subscriber.connect(platformName);
-            }
-        } catch (InterruptedException e) {
-            log.error("retryToConnectWithDelay: Reconnection attempt for '{}' was interrupted.", platformName, e);
-            Thread.currentThread().interrupt();
-        }
     }
 
 
