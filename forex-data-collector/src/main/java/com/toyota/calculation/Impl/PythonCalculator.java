@@ -10,10 +10,11 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class PythonCalculator implements CalculationService {
@@ -43,11 +44,11 @@ public class PythonCalculator implements CalculationService {
             );
 
             boolean validationResult = result.asBoolean();
-            logger.debug("PythonCalculator: Validation result for incoming rate: {}", validationResult);
+            logger.debug("isInComingRateValid: Validation result for incoming rate: {}", validationResult);
 
             return validationResult;
         } catch (Exception e) {
-            logger.error("PythonCalculator: Error during rate validation. Validation result returning false. Details: {}", e.getMessage(), e);
+            logger.error("isInComingRateValid: Error during rate validation. Validation result returning false. Details: {}", e.getMessage(), e);
         }
         return false;
     }
@@ -69,7 +70,7 @@ public class PythonCalculator implements CalculationService {
             BigDecimal bid = new BigDecimal(usd_try_bid);
             BigDecimal ask = new BigDecimal(usd_try_ask);
 
-            logger.debug("PythonCalculator: USD/TRY calculated successfully. Bid: {}, Ask: {}", bid, ask);
+            logger.debug("calculateUsdTry: USD/TRY calculated successfully. Bid: {}, Ask: {}", bid, ask);
 
             return new CalculatedRate(
                     "USDTRY",
@@ -79,7 +80,7 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate USD/TRY." +
+            logger.error("calculateUsdTry: Failed to calculate USD/TRY." +
                     " USD/TRY calculation returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
@@ -104,7 +105,7 @@ public class PythonCalculator implements CalculationService {
             BigDecimal bid = new BigDecimal(rate_bid);
             BigDecimal ask = new BigDecimal(rate_ask);
 
-            logger.debug("PythonCalculator: Dependent rate: {} calculated successfully. Bid: {}, Ask: {}", rateName, bid, ask);
+            logger.debug("calculateRateDependentOnUsdTry: Dependent rate: {} calculated successfully. Bid: {}, Ask: {}", rateName, bid, ask);
 
             return new CalculatedRate(
                     rateName,
@@ -114,7 +115,7 @@ public class PythonCalculator implements CalculationService {
             );
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate rate dependent on USD/TRY. " +
+            logger.error("calculateRateDependentOnUsdTry: Failed to calculate rate dependent on USD/TRY. " +
                     "Derived Rate returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
@@ -133,11 +134,11 @@ public class PythonCalculator implements CalculationService {
             );
             String midValue = result.asString();
 
-            logger.debug("PythonCalculator: USD/TRY mid value calculated: {}", midValue);
+            logger.debug("calculateUsdTryMidValue: USD/TRY mid value calculated: {}", midValue);
             return new BigDecimal(midValue);
 
         } catch (Exception e) {
-            logger.error("PythonCalculator: Failed to calculate USD/TRY mid value. " +
+            logger.error("calculateUsdTryMidValue: Failed to calculate USD/TRY mid value. " +
                     "USD/TRY mid value returning null due to calculation error!. Details: {}", e.getMessage(), e);
             return null;
         }
@@ -157,7 +158,7 @@ public class PythonCalculator implements CalculationService {
              InputStreamReader reader = (scriptFile != null) ? new InputStreamReader(scriptFile) : null) {
 
             if (reader == null) {
-                logger.error("PythonCalculator: Formula file '{}' not found in classpath.", FORMULA_FILE);
+                logger.error("loadTheSourceCode: Formula file '{}' not found in classpath.", FORMULA_FILE);
                 throw new ConfigFileNotFoundException("Formula file cannot found in the classpath: " + FORMULA_FILE);
             }
 
@@ -167,9 +168,9 @@ public class PythonCalculator implements CalculationService {
                     "python"
             ).build();
 
-            logger.trace("PythonCalculator: Python source code loaded and built successfully.");
+            logger.trace("loadTheSourceCode: Python source code loaded and built successfully.");
         } catch (IOException e) {
-            logger.error("PythonCalculator: I/O Exception while loading Python source file: {}", e.getMessage(), e);
+            logger.error("loadTheSourceCode: I/O Exception while loading Python source file: {}", e.getMessage(), e);
             throw new ConfigFileLoadingException("Error while loading Python file: " + e.getMessage());
         }
     }

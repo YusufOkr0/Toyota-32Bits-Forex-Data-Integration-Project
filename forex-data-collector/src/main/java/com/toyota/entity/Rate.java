@@ -2,7 +2,6 @@ package com.toyota.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 public class Rate {
     private String name;

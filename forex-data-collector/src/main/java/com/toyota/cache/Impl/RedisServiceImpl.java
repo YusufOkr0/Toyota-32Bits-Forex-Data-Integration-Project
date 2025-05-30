@@ -51,10 +51,10 @@ public class RedisServiceImpl implements CacheService {
             String rateInJson = objectMapper.writeValueAsString(rate);
 
             jedis.setex(redisKey, TTL_IN_SECONDS, rateInJson);
-            logger.debug("RedisServiceImpl: Successfully saved raw rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
+            logger.debug("saveRawRate: Successfully saved raw rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
 
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save raw rates to the redis. Exception Message: {}.", e.getMessage(), e);
+            logger.error("saveRawRate: Error when save raw rates to the redis. Exception Message: {}.", e.getMessage(), e);
         }
     }
 
@@ -67,9 +67,9 @@ public class RedisServiceImpl implements CacheService {
             String rateInJson = objectMapper.writeValueAsString(rate);
 
             jedis.setex(redisKey, TTL_IN_SECONDS, rateInJson);
-            logger.debug("RedisServiceImpl: Successfully saved calculated rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
+            logger.debug("saveCalculatedRate: Successfully saved calculated rate for key: {} with TTL: {} seconds", redisKey, TTL_IN_SECONDS);
         } catch (JedisConnectionException | JsonProcessingException e) {
-            logger.error("RedisServiceImpl: Error when save calculated rates to the redis. Exception Message: {}", e.getMessage(), e);
+            logger.error("saveCalculatedRate: Error when save calculated rates to the redis. Exception Message: {}", e.getMessage(), e);
         }
     }
 
@@ -92,7 +92,7 @@ public class RedisServiceImpl implements CacheService {
                             rates.add(objectMapper.readValue(json, Rate.class));
 
                         } catch (JsonProcessingException e) {
-                            logger.error("RedisServiceImpl: Could not parse JSON for key: {}. Exception Message: {}", key, e.getMessage(), e);
+                            logger.error("getAllRawRatesByRateName: Could not parse JSON for key: {}. Exception Message: {}", key, e.getMessage(), e);
                         }
                     }
                 }
@@ -100,10 +100,10 @@ public class RedisServiceImpl implements CacheService {
             } while (!cursor.equals(ScanParams.SCAN_POINTER_START));
 
         } catch (JedisConnectionException e) {
-            logger.error("RedisServiceImpl: Redis connection error : {}", e.getMessage(), e);
+            logger.error("getAllRawRatesByRateName: Redis connection error : {}", e.getMessage(), e);
         }
 
-        logger.debug("RedisServiceImpl: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
+        logger.debug("getAllRawRatesByRateName: Fetched {} raw rates for rateName: {}", rates.size(), rateName);
         return rates;
     }
 
@@ -115,6 +115,7 @@ public class RedisServiceImpl implements CacheService {
                     TTL_IN_SECONDS,
                     usdMidValue.toPlainString()
             );
+            logger.debug("saveCalculatedRate: Successfully saved USD/TRY Mid value for key: {} with TTL: {} seconds", USD_TRY_MID_KEY, TTL_IN_SECONDS);
         }
     }
 
@@ -126,7 +127,6 @@ public class RedisServiceImpl implements CacheService {
                 return new BigDecimal(value);
             }
         }
-
         return null;
     }
 

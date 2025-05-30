@@ -8,7 +8,9 @@ import com.toyota.entity.CalculatedRate;
 import com.toyota.entity.Rate;
 import com.toyota.exception.ConnectionException;
 import com.toyota.publisher.KafkaService;
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +40,7 @@ public class KafkaServiceImpl implements KafkaService {
 
     @Override
     public void sendRawRate(Rate rawRate) {
-        logger.trace("KafkaServiceImpl: Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
+        logger.trace("sendRawRate: Sending raw rate to Kafka topic: {}, rate name: {}", rawRateTopic, rawRate.getName());
 
         try {
             String formattedRawRate = objectMapper.writeValueAsString(rawRate);
@@ -49,18 +51,18 @@ public class KafkaServiceImpl implements KafkaService {
 
             forexRatePublisher.send(rawRateRecord, (recordMetadata, e) -> {
                 if (e != null) {
-                    logger.error("KafkaServiceImpl: Error sending raw rate to Kafka topic: {}, rate name: {}, error: {}",
+                    logger.error("sendRawRate: Error sending raw rate to Kafka topic: {}, rate name: {}, error: {}",
                             rawRateTopic, rawRate.getName(), e.getMessage(), e);
                 }
             });
         } catch (Exception e) {
-            logger.error("KafkaServiceImpl: JSON serialization failed for raw rate: {}", e.getMessage(), e);
+            logger.error("sendRawRate: JSON serialization failed for raw rate: {}", e.getMessage(), e);
         }
     }
 
     @Override
     public void sendCalculatedRate(CalculatedRate calculatedRate) {
-        logger.trace("KafkaServiceImpl: Sending calculated rate to Kafka topic: {}, rate name: {}", calculatedRateTopic, calculatedRate.getName());
+        logger.trace("sendCalculatedRate: Sending calculated rate to Kafka topic: {}, rate name: {}", calculatedRateTopic, calculatedRate.getName());
 
         try {
             String formattedCalculatedRate = objectMapper.writeValueAsString(calculatedRate);
@@ -71,12 +73,12 @@ public class KafkaServiceImpl implements KafkaService {
 
             forexRatePublisher.send(calculatedRateRecord, (recordMetadata, e) -> {
                 if (e != null) {
-                    logger.error("KafkaServiceImpl: Error sending calculated rate to Kafka topic: {}, rate name: {}, error: {}",
+                    logger.error("sendCalculatedRate: Error sending calculated rate to Kafka topic: {}, rate name: {}, error: {}",
                             calculatedRateTopic, calculatedRate.getName(), e.getMessage(), e);
                 }
             });
         } catch (Exception e) {
-            logger.error("KafkaServiceImpl: JSON serialization failed for calculated rate: {}", e.getMessage(), e);
+            logger.error("sendCalculatedRate: JSON serialization failed for calculated rate: {}", e.getMessage(), e);
         }
     }
 
