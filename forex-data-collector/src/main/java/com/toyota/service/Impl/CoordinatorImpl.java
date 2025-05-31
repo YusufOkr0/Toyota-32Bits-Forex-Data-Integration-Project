@@ -103,25 +103,6 @@ public class CoordinatorImpl implements CoordinatorService {
         });
     }
 
-    /*
-    * In this method, Maybe i can externalize the 'delayTimeInSeconds' value for each subscriber.
-    * in addition to this, i can schedule the subscription tasks with a different executor service.
-    * i won't go into more detail and will leave it like this.
-    * */
-    @Override
-    public void onUnsubscribe(String platformName, String rateName) {
-        executorService.execute(() -> {
-            long delayTimeInSeconds = 5;
-            log.error("onUnsubscribe: Platform '{}' unsubscribe from rate '{}'. Scheduling retry subscription to rate after {} seconds ... ", platformName, rateName, delayTimeInSeconds);
-
-            scheduledRetryService.schedule(() -> {
-                SubscriberService subscriber = subscribers.get(platformName);
-                subscriber.subscribe(platformName,rateName);
-            }, delayTimeInSeconds, TimeUnit.SECONDS);
-
-        });
-    }
-
 
     private void retryToConnectWithDelay(String platformName) {
         SubscriberService subscriberService = subscribers.get(platformName);

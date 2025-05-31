@@ -46,12 +46,18 @@ public interface CacheService {
     List<Rate> getAllRawRatesByRateName(String rateName);
 
 
+    /**
+     * Stores the USD/TRY mid value in the cache.
+     *
+     * @param usdMidValue the USD/TRY mid exchange rate value to be cached
+     */
     void saveUsdTryMidValue(BigDecimal usdMidValue);
 
-
+    /**
+     * Retrieves the cached USD/TRY mid value.
+     *
+     * @return the cached USD/TRY mid value, or null if not present
+     */
     BigDecimal getUsdTryMidValue();
-
-
-
 
 }

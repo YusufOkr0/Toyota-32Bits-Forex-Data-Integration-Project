@@ -5,9 +5,10 @@
     "exchangeRates": [
       "USDTRY",
       "EURUSD",
-      "GBPUSD"
+      "GBPUSD",
+      "AUDUSD"
     ],
-    "connectionRetryCounts": 20,
+    "connectionRetryLimit": 20,
     "retryDelaySeconds": 10,
     "properties": {
       "username": "YusufOkr0",
@@ -22,9 +23,10 @@
     "exchangeRates": [
       "USDTRY",
       "EURUSD",
-      "GBPUSD"
+      "GBPUSD",
+      "CADUSD"
     ],
-    "connectionRetryCounts": 20,
+    "connectionRetryLimit": 20,
     "retryDelaySeconds": 10,
     "properties": {
       "username": "admin",

@@ -188,7 +188,7 @@ public class RestSubscriberImpl implements SubscriberService {
                                 }
                             } catch (IOException e) {
                                 log.error("createSubscribeJob: Failed to parse rate response for {}: {}", rateName, e.getMessage(),e);
-                                handleConnectionFailure(platformName);
+                                //  Just log.
                             }
                         } else if (statusCode == 400) {     // If given rates doesnt exists in the platform then write log and stop subscription.
                             log.error("createSubscribeJob: Given rate does not exists in rest-data-provider.");
@@ -203,27 +203,13 @@ public class RestSubscriberImpl implements SubscriberService {
                         long responseTimeMs = endTime - startTime;
                         ThreadContext.put("responseTimeMs", String.valueOf(responseTimeMs));
 
-                        if (ex instanceof TimeoutException || (ex.getCause() instanceof TimeoutException)) {
-                            log.error("createSubscribeJob: Timeout occurred for rate: {} on platform: {}. Cancelling subscription...", rateName, platformName,ex);
-                            handleTimeoutException(platformName, rateName);
-                        } else {
-                            log.error("createSubscribeJob: Exception while fetching rate: {} on platform: {}. Cancelling all subscriptions.: {}", rateName, platformName, ex.getMessage(),ex);
-                            handleConnectionFailure(platformName);
-                        }
+                        log.error("createSubscribeJob: Exception while fetching rate: {} on platform: {}. Cancelling all subscriptions.: {}", rateName, platformName, ex.getMessage(),ex);
+                        handleConnectionFailure(platformName);
+
                         ThreadContext.clearMap();
                         return null;
                     });
         };
-    }
-
-
-    // NOTIFY COORDINATOR ON TIMEOUT EXCEPTION IN ORDER TO RE-SUBSCRIBE TO SPECIFIC RATE WITH DELAY
-    private void handleTimeoutException(String platformName, String rateName) {
-        ScheduledFuture<?> job = activeSubscriptions.remove(rateName);
-        if (job != null) {
-            job.cancel(true);
-            coordinator.onUnsubscribe(platformName, rateName);
-        }
     }
 
 

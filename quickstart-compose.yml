@@ -1,9 +1,6 @@
 version: '3.8'
 
 services:
-
-  ######## DATA REPOSITORIES ########
-
   redis:
     image: redis
     container_name: redis
@@ -63,18 +60,13 @@ services:
 
 
 
-  ######## MY APPLICATIONS ########
-
   forex-data-collector:
-    image: yusufokr0/forex-data-collector:1.0.0
+    image: yusufokr0/forex-data-collector
     container_name: forex-data-collector
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC_RAW: raw-rates
-      KAFKA_TOPIC_CALCULATED: calculated-rates
-      LOG_LEVEL_TOYOTA: INFO
       SUBSCRIBERS_CONFIG_PATH: /app/conf/subscribers.json
     volumes:
       - main-app-log:/app/forex-data-collector/logs
@@ -94,27 +86,18 @@ services:
 
 
   tcp-data-provider:
-    image: yusufokr0/tcp-data-provider:1.0.0
+    image: yusufokr0/tcp-data-provider
     container_name: tcp-platform
     ports:
       - "8090:8090"
-    environment:
-      MINIMUM_RATE_CHANGE: 0.001
-      MAXIMUM_RATE_CHANGE: 0.002
-      PUBLISH_FREQUENCY: 7000
-      SPIKE_PERCENTAGE: 0.011
-      SPIKE_INTERVAL: 20
-      USER_CREDENTIALS: yusuf|pass,admin|admin,32bit|aloha,user1|user1
-      LOG_LEVEL_TOYOTA: INFO
     volumes:
-      - ./external-config/tcp-platform:/conf  # MOUNT THE INITIAL CONFIG FILE ON DEMAND
       - tcp-platform-log:/app/tcp-data-provider/logs
     networks:
       - forex-net
 
 
   rest-data-provider:
-    image: yusufokr0/rest-data-provider:1.0.0
+    image: yusufokr0/rest-data-provider
     container_name: rest-platform
     ports:
       - "8092:8092"
@@ -125,25 +108,15 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       REDIS_CUSTOM_HOST: redis
       REDIS_CUSTOM_PORT: 6379
-      MINIMUM_RATE_CHANGE: 0.001
-      MAXIMUM_RATE_CHANGE: 0.002
-      RATE_UPDATE_INTERVAL: 7000
-      SPIKE_PERCENTAGE: 0.011
-      SPIKE_INTERVAL: 20
-      LOG_LEVEL_TOYOTA: INFO
-      SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties
-      # IF YOU WANT TO START THE SYSTEM WITH YOUR SELECTED EXCHANGE RATES,
-      # SET THE INITIAL VALUES FROM THE APPLICATION YAML FILE IN THE 'external-config' FOLDER AND MOUNT THE FILE INTO THE CONTAINER.
     volumes:
       - rest-platform-log:/app/rest-data-provider/logs
-      - ./external-config/rest-platform/application.yml:/app/config/application.yml:ro
+    networks:
+      - forex-net
     depends_on:
       postgres-rest-platform:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - forex-net
 
 
 
@@ -156,10 +129,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_CUSTOM_CONSUMER_GROUP_ID: postgres
-      KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
-      KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
-      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
     networks:
       - forex-net
     depends_on:
@@ -175,23 +144,17 @@ services:
     container_name: kafka-opensearch-consumer
     environment:
       KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_CUSTOM_CONSUMER_GROUP_ID: opensearch
-      KAFKA_CUSTOM_CONSUMER_RAW_TOPIC: raw-rates
-      KAFKA_CUSTOM_CONSUMER_CALC_TOPIC: calculated-rates
-      KAFKA_CUSTOM_CONSUMER_AUTO_OFFSET_RESET: earliest
       OPENSEARCH_HOST: opensearch
       OPENSEARCH_PORT: 9200
       OPENSEARCH_USERNAME: admin
       OPENSEARCH_PASSWORD: Yusuf.32Bits
+    networks:
+      - forex-net
     depends_on:
       kafka:
         condition: service_healthy
       opensearch:
         condition: service_healthy
-    networks:
-      - forex-net
-
-
 
 
 
@@ -205,11 +168,11 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - forex-net
     volumes:
       - zk-data:/var/lib/zookeeper/data
       - zk-log:/var/lib/zookeeper/log
+    networks:
+      - forex-net
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -227,11 +190,11 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
     volumes:
       - kafka-data:/var/lib/kafka/data
+    networks:
+      - forex-net
     depends_on:
       zookeeper:
         condition: service_started
-    networks:
-      - forex-net
     healthcheck:
       test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list"]
       interval: 20s
@@ -246,11 +209,11 @@ services:
       KAFKA_CLUSTERS_0_NAME: forex-kafka-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - forex-net
     depends_on:
       kafka:
         condition: service_healthy
-    networks:
-      - forex-net
 
 
 
@@ -266,13 +229,13 @@ services:
     volumes:
       - ./forex-data-collector/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - main-app-log:/var/log/main-app:ro  # only readable
+    networks:
+      - forex-net
     depends_on:
       logstash:
         condition: service_started
       forex-data-collector:
         condition: service_started
-    networks:
-      - forex-net
 
 
 
@@ -284,11 +247,11 @@ services:
       - "5044:5044"
     volumes:
       - ./forex-data-collector/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    networks:
+      - forex-net
     depends_on:
       opensearch:
         condition: service_healthy
-    networks:
-      - forex-net
 
   opensearch:
     image: opensearchproject/opensearch:latest
@@ -319,11 +282,11 @@ services:
       - SERVER_HOST=0.0.0.0
       - OPENSEARCH_USERNAME=admin
       - OPENSEARCH_PASSWORD=Yusuf.32Bits
+    networks:
+      - forex-net
     depends_on:
       opensearch:
         condition: service_healthy
-    networks:
-      - forex-net
 
 
 volumes:

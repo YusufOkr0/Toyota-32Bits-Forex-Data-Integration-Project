@@ -30,7 +30,7 @@ public class ConsumerServiceImpl implements ConsumerService {
     public void consumeRawRate(CurrencyPair currencyPair) {
         try {
             if (currencyPair == null) {
-                log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calculated.topic}");
+                log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calc.topic}");
                 return;
             }
 
@@ -59,7 +59,7 @@ public class ConsumerServiceImpl implements ConsumerService {
     public void consumeCalculatedRate(CurrencyPair currencyPair) {
         try {
             if (currencyPair == null) {
-                log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calculated.topic}");
+                log.warn("Received null CalculatedRateDto, skipping processing. Topic: {}", "${kafka.custom.consumer.calc.topic}");
                 return;
             }
 

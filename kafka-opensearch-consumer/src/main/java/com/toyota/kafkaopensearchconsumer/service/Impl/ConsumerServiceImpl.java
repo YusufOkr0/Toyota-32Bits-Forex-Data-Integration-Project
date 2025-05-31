@@ -3,6 +3,7 @@ package com.toyota.kafkaopensearchconsumer.service.Impl;
 import com.toyota.kafkaopensearchconsumer.entity.CurrencyPair;
 import com.toyota.kafkaopensearchconsumer.service.ConsumerService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ConsumerServiceImpl implements ConsumerService {
 
     private final OpenSearchServiceImpl openSearchService;
@@ -27,9 +29,12 @@ public class ConsumerServiceImpl implements ConsumerService {
             CurrencyPair currencyPair,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
     ) {
-        String indexName = topic + "-" + LocalDate.now();
+        if (currencyPair == null) {
+            log.warn("Received null currencyPair, skipping processing. Topic: {}", "${kafka.custom.consumer.calc.topic}");
+            return;
+        }
 
-        System.out.println(currencyPair.toString());
+        String indexName = topic + "-" + LocalDate.now();
 
         openSearchService.indexCurrencyPair(
                 currencyPair,
@@ -47,9 +52,13 @@ public class ConsumerServiceImpl implements ConsumerService {
             CurrencyPair currencyPair,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic
     ) {
+        if (currencyPair == null) {
+            log.warn("Received null currencyPair, skipping processing. Topic: {}", "${kafka.custom.consumer.calc.topic}");
+            return;
+        }
+
         String indexName = topic + "-" + LocalDate.now();
 
-        System.out.println(currencyPair.toString());
         openSearchService.indexCurrencyPair(
                 currencyPair,
                 indexName

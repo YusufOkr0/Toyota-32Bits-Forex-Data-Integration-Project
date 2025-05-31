@@ -6,7 +6,7 @@ COPY pom.xml .
 
 COPY src ./src
 
-RUN mvn package -DskipTests
+RUN mvn clean package -DskipTests
 
 
 FROM ghcr.io/graalvm/jdk-community:21
@@ -18,5 +18,5 @@ WORKDIR /app
 COPY --from=builder /app/target/Forex-data-collector.jar ./app.jar
 COPY --from=builder /app/target/lib ./lib
 
-ENTRYPOINT ["java", "-cp", "/app/app.jar:/app/lib/*", "com.toyota.forex.ForexDataCollector"]
+ENTRYPOINT ["java", "-cp", "/app/app.jar:/app/lib/*", "com.toyota.ForexDataCollector"]
 
