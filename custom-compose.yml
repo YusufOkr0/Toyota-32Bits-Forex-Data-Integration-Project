@@ -65,7 +65,7 @@ services:
     build:
       context: ./forex-data-collector
       dockerfile: Dockerfile
-    image: custom/forex-data-collector
+    image: yusufokr0/forex-data-collector
     container_name: forex-data-collector
     environment:
       REDIS_HOST: redis
@@ -95,7 +95,7 @@ services:
     build:
       context: ./tcp-data-provider
       dockerfile: Dockerfile
-    image: custom/tcp-data-provider
+    image: yusufokr0/tcp-data-provider
     container_name: tcp-platform
     ports:
       - "8090:8090"
@@ -118,7 +118,7 @@ services:
     build:
       context: ./rest-data-provider
       dockerfile: Dockerfile
-    image: custom/rest-data-provider
+    image: yusufokr0/rest-data-provider
     container_name: rest-platform
     ports:
       - "8092:8092"
@@ -156,7 +156,7 @@ services:
     build:
       context: ./kafka-db-consumer
       dockerfile: Dockerfile
-    image: custom/kafka-db-consumer
+    image: yusufokr0/kafka-db-consumer
     container_name: kafka-db-consumer
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-kafka:5432/forex_db
@@ -182,7 +182,7 @@ services:
     build:
       context: ./kafka-opensearch-consumer
       dockerfile: Dockerfile
-    image: custom/kafka-opensearch-consumer
+    image: yusufokr0/kafka-opensearch-consumer
     container_name: kafka-opensearch-consumer
     environment:
       KAFKA_CUSTOM_BOOTSTRAP_SERVERS: kafka:29092

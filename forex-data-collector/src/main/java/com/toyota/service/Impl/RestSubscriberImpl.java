@@ -59,7 +59,7 @@ public class RestSubscriberImpl implements SubscriberService {
         this.objectMapper = configureObjectMapper();
         this.httpClient = configureHttpClient();
 
-        this.scheduler = Executors.newScheduledThreadPool(1);
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.activeSubscriptions = new ConcurrentHashMap<>();
         this.receivedRates = ConcurrentHashMap.newKeySet();
     }
