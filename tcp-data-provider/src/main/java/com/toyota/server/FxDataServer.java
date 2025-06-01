@@ -1,6 +1,7 @@
 package com.toyota.server;
 
 import com.toyota.auth.AuthService;
+import com.toyota.entity.ServerResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,20 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  */
 public class FxDataServer {
-
-    private static final String ERROR_NOT_CONNECTED = "ERROR|Not Authenticated";
-    private static final String ERROR_INVALID_COMMAND = "ERROR|Invalid command. Please enter one of these: connect,disconnect,subscribe,unsubscribe";
-    private static final String ERROR_INVALID_CREDENTIALS = "ERROR|Invalid credentials";
-    private static final String ERROR_INVALID_CURRENCY_PAIR = "ERROR|Invalid currency pair: ";
-    private static final String ERROR_INVALID_MESSAGE_FORMAT = "ERROR|Invalid message format";
-    private static final String ERROR_CLIENT_ALREADY_HAS_A_SESSION = "ERROR|User already logged in from another session";
-    private static final String INFO_NOT_SUBSCRIBED = "INFO|Not subscribed to currency pair: ";
-    private static final String INFO_ALREADY_SUBSCRIBED = "INFO|Already subscribed to currency pair: ";
-    private static final String INFO_CLIENT_ALREADY_CONNECTED = "INFO|User already connected";
-    private static final String SUCCESS_SUBSCRIBED = "SUCCESS|Subscribed to currency pair: ";
-    private static final String SUCCESS_UNSUBSCRIBED = "SUCCESS|Unsubscribed from currency pair: ";
-    private static final String SUCCESS_CONNECTED = "SUCCESS|CONNECTED";
-
 
     private static final Logger logger = LogManager.getLogger(FxDataServer.class);
 
@@ -217,7 +204,7 @@ public class FxDataServer {
 
             default:
                 logger.warn("Invalid command received: {}", command);
-                sendInfoMessageToClient(clientChannel, ERROR_INVALID_COMMAND);
+                sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_COMMAND.getMessage());
                 break;
         }
         logger.trace("validateMessageAndTakeAction method finished.");
@@ -236,14 +223,14 @@ public class FxDataServer {
         // KULLANICI AUTHENTICATED OLMADI ISE.
         if (!authService.isClientAuthenticated(clientChannel)) {
             logger.warn("Subscribe attempt failed for {}: Not authenticated.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_NOT_CONNECTED.getMessage());
             return;
         }
 
 
         if (messageParts.length != 2) {
             logger.warn("Subscribe attempt failed for {}: Invalid message format.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_MESSAGE_FORMAT.getMessage());
             return;
         }
 
@@ -252,18 +239,18 @@ public class FxDataServer {
 
         if (!currencyPairs.contains(currencyPair)) {
             logger.warn("Subscribe attempt failed for {}: Invalid currency pair '{}'.", getClientAddressSafe(clientChannel), currencyPair);
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CURRENCY_PAIR + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_CURRENCY_PAIR.getMessage(currencyPair));
             return;
         }
 
         Set<SocketChannel> clients = subscriptions.get(currencyPair);
         if (clients.contains(clientChannel)) {
             logger.info("Client {} already subscribed to {}", getClientAddressSafe(clientChannel), currencyPair);
-            sendInfoMessageToClient(clientChannel, INFO_ALREADY_SUBSCRIBED + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.INFO_ALREADY_SUBSCRIBED.getMessage(currencyPair));
         } else {
             logger.info("Client {} successfully subscribed to {}", getClientAddressSafe(clientChannel), currencyPair);
             clients.add(clientChannel);
-            sendInfoMessageToClient(clientChannel, SUCCESS_SUBSCRIBED + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.SUCCESS_SUBSCRIBED.getMessage(currencyPair));
         }
         logger.trace("handleSubscribe method finished.");
     }
@@ -280,21 +267,21 @@ public class FxDataServer {
         // handleSubscribe'daki MANTIK ILE AYNI EGER AUTHENTICATION ISLEMI YAPILMAMIS ISE MESSAGE YOLLA.
         if (!authService.isClientAuthenticated(clientChannel)) {
             logger.warn("Unsubscribe attempt failed for {}: Not connected.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_NOT_CONNECTED);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_NOT_CONNECTED.getMessage());
             return;
         }
 
 
         if (messageParts.length != 2) {
             logger.warn("Unsubscribe attempt failed for {}: Invalid message format.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_MESSAGE_FORMAT.getMessage());
             return;
         }
 
         String currencyPair = messageParts[1].trim().toUpperCase();
         if (!currencyPairs.contains(currencyPair)) {
             logger.warn("Unsubscribe attempt failed for {}: Invalid currency pair '{}'.", getClientAddressSafe(clientChannel), currencyPair);
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CURRENCY_PAIR + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_CURRENCY_PAIR.getMessage(currencyPair));
             return;
         }
 
@@ -302,10 +289,10 @@ public class FxDataServer {
         if (clients.contains(clientChannel)) {
             logger.info("Client {} successfully unsubscribed from {}", getClientAddressSafe(clientChannel), currencyPair);
             clients.remove(clientChannel);
-            sendInfoMessageToClient(clientChannel, SUCCESS_UNSUBSCRIBED + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.SUCCESS_UNSUBSCRIBED.getMessage(currencyPair));
         } else {
             logger.info("Client {} was not subscribed to {}.", getClientAddressSafe(clientChannel), currencyPair);
-            sendInfoMessageToClient(clientChannel, INFO_NOT_SUBSCRIBED + currencyPair);
+            sendInfoMessageToClient(clientChannel, ServerResponse.INFO_NOT_SUBSCRIBED.getMessage(currencyPair));
         }
         logger.trace("handleUnsubscribe method finished.");
     }
@@ -323,7 +310,7 @@ public class FxDataServer {
 
         if (messageParts.length != 3) {
             logger.warn("Connect attempt failed for {}: Invalid message format.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_MESSAGE_FORMAT);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_MESSAGE_FORMAT.getMessage());
             return;
         }
 
@@ -333,14 +320,14 @@ public class FxDataServer {
         // AYNI IP ILE BIR DAHA CONNECT DENER ISE.
         if (authService.isClientAuthenticated(clientChannel)) {
             logger.warn("Authentication attempt failed for {}: Already authenticated.", getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, INFO_CLIENT_ALREADY_CONNECTED);
+            sendInfoMessageToClient(clientChannel, ServerResponse.INFO_CLIENT_ALREADY_CONNECTED.getMessage());
             return;
         }
 
         // FARKLI IP'DEN AYNI USERNAME VE PASSWORD GELIR ISE.
         if (authService.isClientHasASession(username)) {
             logger.warn("Authentication attempt failed for user '{}' from {}: User already has an active session.", username, getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_CLIENT_ALREADY_HAS_A_SESSION);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_CLIENT_ALREADY_HAS_A_SESSION.getMessage());
             return;
         }
 
@@ -348,11 +335,11 @@ public class FxDataServer {
         // BÖYLECE BASKA BIR CHANNEL AYNI USERNAME ILE BAGLANAMACAK.
         if (authService.authenticateUser(username, password)) {
             authService.createSession(clientChannel,username);
-            sendInfoMessageToClient(clientChannel, SUCCESS_CONNECTED);
+            sendInfoMessageToClient(clientChannel, ServerResponse.SUCCESS_CONNECTED.getMessage());
             logger.info("Client {} successfully authenticated and logged in as user '{}'.", getClientAddressSafe(clientChannel), username);
         } else {
             logger.warn("Authentication attempt failed for user '{}' from {}: Invalid credentials.", username, getClientAddressSafe(clientChannel));
-            sendInfoMessageToClient(clientChannel, ERROR_INVALID_CREDENTIALS);
+            sendInfoMessageToClient(clientChannel, ServerResponse.ERROR_INVALID_CREDENTIALS.getMessage());
         }
         logger.trace("handleConnect method finished.");
     }
