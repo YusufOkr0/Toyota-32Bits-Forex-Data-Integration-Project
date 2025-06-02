@@ -25,13 +25,16 @@ public class PythonCalculator implements CalculationService {
     private static final String FORMULA_FILE = "scripts/formulas.py";
 
     private Source source;
+    private final ThreadLocal<Context> contextHolder = ThreadLocal.withInitial(this::createContext);
 
     public PythonCalculator() {
         loadTheSourceCode();
     }
 
     public boolean isInComingRateValid(String inComingBid, String inComingAsk, List<String> cachedBids, List<String> cachedAsks) {
-        try (Context context = createContext()) {
+        try {
+            Context context = contextHolder.get();
+
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("is_rate_valid");
@@ -54,7 +57,9 @@ public class PythonCalculator implements CalculationService {
     }
 
     public CalculatedRate calculateUsdTry(List<String> cachedBids, List<String> cachedAsks) {
-        try (Context context = createContext()) {
+        try {
+            Context context = contextHolder.get();
+
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_usd_try");
@@ -88,7 +93,9 @@ public class PythonCalculator implements CalculationService {
 
     @Override
     public CalculatedRate calculateRateDependentOnUsdTry(String rateName, String usdMid, List<String> cachedBids, List<String> cachedAsks) {
-        try (Context context = createContext()) {
+        try {
+            Context context = contextHolder.get();
+
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_rate_dependent_on_usd_try");
@@ -123,7 +130,9 @@ public class PythonCalculator implements CalculationService {
 
     @Override
     public BigDecimal calculateUsdTryMidValue(List<String> cachedUsdTryBids, List<String> cachedUsdTryAsks) {
-        try (Context context = createContext()) {
+        try {
+            Context context = contextHolder.get();
+
             Value function = context
                     .getBindings(LANGUAGE_NAME)
                     .getMember("calculate_usd_try_mid_value");
@@ -146,10 +155,14 @@ public class PythonCalculator implements CalculationService {
 
 
     private Context createContext() {
+        logger.trace("PythonCalculator: Creating new GraalVM context for Python execution.");
+
         Context context = Context.newBuilder(LANGUAGE_NAME)
                 .allowAllAccess(true)
                 .build();
         context.eval(source);
+
+        logger.trace("PythonCalculator: Python source code evaluated successfully.");
         return context;
     }
 
