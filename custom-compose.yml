@@ -107,7 +107,8 @@ services:
       SPIKE_INTERVAL: 20
       USER_CREDENTIALS: yusuf|pass,admin|admin,32bit|aloha,user1|user1
     volumes:
-        # Start the desired exchange rates with the desired prices from the 'external-config' folder
+        # Start the desired exchange rates with the desired prices
+        # from the 'external-config' folder
       - ./external-config/tcp-platform:/conf
       - tcp-platform-log:/app/tcp-data-provider/logs
     networks:

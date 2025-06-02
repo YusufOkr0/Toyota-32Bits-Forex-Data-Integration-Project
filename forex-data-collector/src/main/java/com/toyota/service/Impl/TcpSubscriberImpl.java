@@ -95,13 +95,13 @@ public class TcpSubscriberImpl implements SubscriberService {
     @Override
     public void subscribe(String platformName, String rateName) {
         log.info("subscribe: Subscribing to rate: {} on platform: {}", rateName, platformName);
-        sendMessageToServer(String.format("subscribe|%s_%s", platformName, rateName));
+        sendMessageToServer(String.format("subscribe|%s", rateName));
     }
 
     @Override
     public void unSubscribe(String platformName, String rateName) {
         log.info("unSubscribe: Unsubscribing from rate: {} on platform: {}", rateName, platformName);
-        sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
+        sendMessageToServer(String.format("unsubscribe|%s", rateName));
     }
 
     @Override
