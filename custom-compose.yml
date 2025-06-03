@@ -103,7 +103,7 @@ services:
       MINIMUM_RATE_CHANGE: 0.001
       MAXIMUM_RATE_CHANGE: 0.002
       PUBLISH_FREQUENCY: 7000
-      SPIKE_PERCENTAGE: 0.011
+      SPIKE_PERCENTAGE: 0.01
       SPIKE_INTERVAL: 20
       USER_CREDENTIALS: yusuf|pass,admin|admin,32bit|aloha,user1|user1
     volumes:
@@ -133,7 +133,7 @@ services:
       MINIMUM_RATE_CHANGE: 0.001
       MAXIMUM_RATE_CHANGE: 0.002
       RATE_UPDATE_INTERVAL: 7000
-      SPIKE_PERCENTAGE: 0.011
+      SPIKE_PERCENTAGE: 0.01
       SPIKE_INTERVAL: 20
       LOG_LEVEL_TOYOTA: INFO
       SPRING_CONFIG_LOCATION: file:/app/config/application.yml,classpath:application.properties

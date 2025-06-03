@@ -95,13 +95,13 @@ public class TcpSubscriberImpl implements SubscriberService {
     @Override
     public void subscribe(String platformName, String rateName) {
         log.info("subscribe: Subscribing to rate: {} on platform: {}", rateName, platformName);
-        sendMessageToServer(String.format("subscribe|%s", rateName));
+        sendMessageToServer(String.format("subscribe|%s_%s", platformName, rateName));
     }
 
     @Override
     public void unSubscribe(String platformName, String rateName) {
         log.info("unSubscribe: Unsubscribing from rate: {} on platform: {}", rateName, platformName);
-        sendMessageToServer(String.format("unsubscribe|%s", rateName));
+        sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
     }
 
     @Override
@@ -127,6 +127,12 @@ public class TcpSubscriberImpl implements SubscriberService {
                         receivedRates.add(rateName);
                         coordinator.onRateAvailable(platformName, rateName, rate);
                     }
+                } else if (serverMessage.contains("INFO|Not subscribed to currency pair")) {
+                    log.warn("listenToIncomingRates: Not subscribed to currency pair.");
+                } else if (serverMessage.contains("INFO|Already subscribed to currency pair")) {
+                    log.warn("listenToIncomingRates: Already subscribed to currency pair.");
+                } else if (serverMessage.contains("ERROR|Invalid currency pair")) {
+                    log.warn("listenToIncomingRates: Invalid currency pair. Cannot subscribe.");
                 }
             }
 

@@ -3,10 +3,10 @@
     "platformName": "REST",
     "className": "com.toyota.service.Impl.RestSubscriberImpl",
     "exchangeRates": [
-      "REST_USDTRY",
-      "REST_EURUSD",
-      "REST_GBPUSD",
-      "REST_AUDUSD"
+      "USDTRY",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD"
     ],
     "connectionRetryLimit": 20,
     "retryDelaySeconds": 10,
@@ -21,10 +21,10 @@
     "platformName": "TCP",
     "className": "com.toyota.service.Impl.TcpSubscriberImpl",
     "exchangeRates": [
-      "TCP_USDTRY",
-      "TCP_EURUSD",
-      "TCP_GBPUSD",
-      "TCP_CADUSD"
+      "USDTRY",
+      "EURUSD",
+      "GBPUSD",
+      "CADUSD"
     ],
     "connectionRetryLimit": 20,
     "retryDelaySeconds": 10,

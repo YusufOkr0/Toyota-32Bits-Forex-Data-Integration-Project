@@ -118,7 +118,7 @@ public class RestSubscriberImpl implements SubscriberService {
             return;
         }
 
-        String rateUrl = String.format("%s/api/rates/%s", baseUrl, rateName); //localhost:8092/api/rates/REST_USDTRY
+        String rateUrl = String.format("%s/api/rates/%s_%s", baseUrl, platformName, rateName); //localhost:8092/api/rates/REST_USDTRY
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(rateUrl))
