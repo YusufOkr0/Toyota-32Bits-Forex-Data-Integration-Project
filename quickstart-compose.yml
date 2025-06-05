@@ -67,6 +67,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      FOREX_EMAIL_HOST: --host
+      FOREX_EMAIL_PORT: --port
+      FOREX_EMAIL_USERNAME: --your-gmail-address
+      FOREX_EMAIL_PASSWORD: --app-password
+      FOREX_EMAIL_RECIPIENTS_TO: --recipients-seperated-with-comma
       SUBSCRIBERS_CONFIG_PATH: /app/conf/subscribers.json
     volumes:
       - main-app-log:/app/forex-data-collector/logs

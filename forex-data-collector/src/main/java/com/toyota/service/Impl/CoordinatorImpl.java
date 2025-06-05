@@ -59,7 +59,7 @@ public class CoordinatorImpl implements CoordinatorService {
             if (status) {
                 log.info("onConnect: Platform '{}' connection status: {}", platformName, "CONNECTED");
 
-                retryCounts.put(platformName,0);    // set connection retry count to 0 when connection established.
+                retryCounts.put(platformName, 0);    // set connection retry count to 0 when connection established.
 
                 SubscriberService subscriber = subscribers.get(platformName);
                 SubscriberConfig subscriberConfig = subscriber.getConfig();

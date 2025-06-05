@@ -191,7 +191,7 @@ public class RestSubscriberImpl implements SubscriberService {
                                 //  Just log.
                             }
                         } else if (statusCode == 400) {     // If given rates doesnt exists in the platform then write log and stop subscription.
-                            log.error("createSubscribeJob: Given rate does not exists in rest-data-provider.");
+                            log.warn("createSubscribeJob: Given rate does not exists in rest-data-provider.");
                             unSubscribe(platformName, rateName);
                         } else {
                             log.error("createSubscribeJob: Failed to fetch rate: {} from platform: {}. HTTP status: {}", rateName, platformName, statusCode);
@@ -199,14 +199,8 @@ public class RestSubscriberImpl implements SubscriberService {
                         }
                     })
                     .exceptionally(ex -> {
-                        long endTime = System.currentTimeMillis();
-                        long responseTimeMs = endTime - startTime;
-                        ThreadContext.put("responseTimeMs", String.valueOf(responseTimeMs));
-
                         log.error("createSubscribeJob: Exception while fetching rate: {} on platform: {}. Cancelling all subscriptions.: {}", rateName, platformName, ex.getMessage(),ex);
                         handleConnectionFailure(platformName);
-
-                        ThreadContext.clearMap();
                         return null;
                     });
         };

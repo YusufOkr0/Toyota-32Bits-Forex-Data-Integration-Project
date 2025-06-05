@@ -112,37 +112,43 @@ public class TcpSubscriberImpl implements SubscriberService {
 
 
     private void listenToIncomingRates(String platformName) {
-        log.info("listenToIncomingRates: Start to listen to incoming rates for platform: {}",platformName);
+        log.info("listenToIncomingRates: Start to listen to incoming rates for platform: {}", platformName);
         try {
             String serverMessage;
             while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
-                if (serverMessage.startsWith("TCP_")) {
-                    String rateName = serverMessage.substring(4, 10);
-                    Rate rate = convertMessageToRate(serverMessage);
-                    if(rate == null) return;
-
-                    if (receivedRates.contains(rateName)) {
-                        coordinator.onRateUpdate(platformName, rateName, rate);
-                    } else {
-                        receivedRates.add(rateName);
-                        coordinator.onRateAvailable(platformName, rateName, rate);
-                    }
-                } else if (serverMessage.contains("INFO|Not subscribed to currency pair")) {
-                    log.warn("listenToIncomingRates: Not subscribed to currency pair.");
-                } else if (serverMessage.contains("INFO|Already subscribed to currency pair")) {
-                    log.warn("listenToIncomingRates: Already subscribed to currency pair.");
-                } else if (serverMessage.contains("ERROR|Invalid currency pair")) {
-                    log.warn("listenToIncomingRates: Invalid currency pair. Cannot subscribe.");
-                }
+                processServerMessage(platformName, serverMessage);
             }
-
         } catch (IOException e) {
-            log.error("listenToIncomingRates: Server listening error for platform: {}",platformName,e);
+            log.error("listenToIncomingRates: Server listening error for platform: {}", platformName, e);
         } finally {
             closeResources();
             coordinator.onDisConnect(platformName);
         }
     }
+
+    private void processServerMessage(String platformName, String message) {
+        if (message.startsWith("TCP_")) {
+            handleRateMessage(platformName, message);
+        } else if (message.contains("INFO|Not subscribed to currency pair") ||
+                message.contains("INFO|Already subscribed to currency pair") ||
+                message.contains("ERROR|Invalid currency pair")) {
+            log.warn("listenToIncomingRates: Server Message: {}.", message);
+        }
+    }
+
+    private void handleRateMessage(String platformName, String message) {
+        String rateName = message.substring(4, 10);
+        Rate rate = convertMessageToRate(message);
+        if (rate == null) return;
+
+        if (receivedRates.contains(rateName)) {
+            coordinator.onRateUpdate(platformName, rateName, rate);
+        } else {
+            receivedRates.add(rateName);
+            coordinator.onRateAvailable(platformName, rateName, rate);
+        }
+    }
+
 
     private Rate convertMessageToRate(String message) {
         try {

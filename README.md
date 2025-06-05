@@ -1,8 +1,6 @@
 <div align="center" class="text-center">
 
 <br>
-<br>
-<br>
 
 <img width="300" src="assets/32Bit_logo.png" alt="32bit">
 
@@ -190,7 +188,8 @@ Kafka UI is accessible at **`http://localhost:8090`** by default. You can arrang
 ### 🔸 Persistent Storage with PostgreSQL
 
 All raw and calculated forex data is also persisted in a **PostgreSQL** database. You can connect to the database directly if you need to query or analyze historical data.
-It is available on port **`5433`** by default. You can arrange it from compose file. 
+It is available on port **`5433`** by default. You can arrange it from compose file.
+
 ---
 
 ### 🔸 Visual Analytics with OpenSearch Dashboards
