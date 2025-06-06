@@ -182,7 +182,7 @@ docker-compose -f custom-compose.yml up -d
 
 You can monitor the real-time data flowing through the system using **Kafka UI**. All messages published to Kafka topics such as `raw-rates` and `calculated-rates` can be viewed live.
 
-Kafka UI is accessible at **`http://localhost:8090`** by default. You can arrange it from compose file.
+Kafka UI is accessible at **`http://localhost:9090`** by default. You can arrange it from compose file.
 
 ---
 
