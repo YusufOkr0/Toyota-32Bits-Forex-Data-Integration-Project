@@ -7,30 +7,13 @@
       "EURUSD",
       "GBPUSD"
     ],
-    "connectionRetryLimit": 20,
+    "connectionRetryLimit": 2,
     "retryDelaySeconds": 10,
     "properties": {
       "username": "YusufOkr0",
       "password": "YusufOkr0",
       "baseUrl": "http://127.0.0.1:8092",
       "subscriptionDelayMs": 7000
-    }
-  },
-  {
-    "platformName": "TCP",
-    "className": "com.toyota.service.Impl.TcpSubscriberImpl",
-    "exchangeRates": [
-      "USDTRY",
-      "EURUSD",
-      "GBPUSD"
-    ],
-    "connectionRetryLimit": 20,
-    "retryDelaySeconds": 10,
-    "properties": {
-      "username": "admin",
-      "password": "admin",
-      "host": "127.0.0.1",
-      "port": 8090
     }
   }
 ]

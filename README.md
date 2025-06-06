@@ -11,6 +11,7 @@
 
 
 <img alt="Java" src="https://img.shields.io/badge/Java-007396.svg?style=flat&logo=java&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+<img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-6DB33F.svg?style=flat&logo=springboot&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
 <img alt="Python" src="https://img.shields.io/badge/Python-3776AB.svg?style=flat&logo=Python&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
 <img alt="Maven" src="https://img.shields.io/badge/Maven-C71A36.svg?style=flat&logo=apachemaven&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
 <img alt="Redis" src="https://img.shields.io/badge/Redis-FF4438.svg?style=flat&logo=Redis&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
@@ -60,7 +61,7 @@ The project includes the following main components:
 
 ### Forex Data Simulation Platforms
 *   **`tcp-data-provider`**: Simulates streaming Forex data over a TCP socket connection. [Get More Detail](./tcp-data-provider/README.md)
-*   **`rest-data-provider`**: Simulates Forex data retrieval via a REST API upon request. [Readme file will be here soon.](./rest-data-provider/README.md)
+*   **`rest-data-provider`**: Simulates Forex data retrieval via a REST API upon request. [Get More Detail](./rest-data-provider/README.md)
 
 ### Forex Data Collector
 *   **`forex-data-collector`**: A central **standalone Java application** designed to connect to various data provider platforms (like the simulators above). It collects raw financial data, performs necessary processing and calculations, utilizes Redis for caching, and publishes both raw and calculated data to Kafka topics.

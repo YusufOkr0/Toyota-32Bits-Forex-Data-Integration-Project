@@ -116,6 +116,7 @@ public class CoordinatorImpl implements CoordinatorService {
             log.error("retryToConnectWithDelay: Retry limit {} reached for platform '{}'. Sending notification email, but will continue retrying...", connectionRetryLimit, platformName);
             mailSender.sendConnectionFailureNotification(platformName, connectionRetryLimit, retryDelaySeconds);
             retryCounts.put(platformName, 0);
+            currentRetryCount = 0;
         } else {
             retryCounts.put(platformName, currentRetryCount + 1);
         }

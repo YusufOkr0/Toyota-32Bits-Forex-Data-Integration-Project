@@ -8,7 +8,7 @@
       "GBPUSD",
       "AUDUSD"
     ],
-    "connectionRetryLimit": 20,
+    "connectionRetryLimit": 5,
     "retryDelaySeconds": 10,
     "properties": {
       "username": "YusufOkr0",
@@ -26,7 +26,7 @@
       "GBPUSD",
       "CADUSD"
     ],
-    "connectionRetryLimit": 20,
+    "connectionRetryLimit": 5,
     "retryDelaySeconds": 10,
     "properties": {
       "username": "admin",
