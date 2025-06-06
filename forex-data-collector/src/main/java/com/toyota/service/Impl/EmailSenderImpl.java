@@ -3,12 +3,10 @@ package com.toyota.service.Impl;
 import com.toyota.config.ApplicationConfig;
 import com.toyota.service.MailSender;
 import jakarta.mail.*;
-
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

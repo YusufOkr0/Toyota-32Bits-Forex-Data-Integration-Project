@@ -2,16 +2,26 @@ rest:
   rates:
     rest_usdtry:
       bid: 38.4426
-      ask: 38.8584
-      min-limit: 37.9134
-      max-limit: 39.1324
+      ask: 38.7584
+      min-limit: 37.8699845
+      max-limit: 39.1023987
     rest_eurusd:
       bid: 1.1266
       ask: 1.1369
-      min-limit: 1.10654
-      max-limit: 1.14654
+      min-limit: 1.10981878
+      max-limit: 1.14361781
     rest_gbpusd:
       bid: 1.3273
-      ask: 1.3573
-      min-limit: 1.30245
-      max-limit: 1.34142
+      ask: 1.3323
+      min-limit: 1.30752926
+      max-limit: 1.34460034
+    rest_audusd:
+      bid: 0.6725
+      ask: 0.6775
+      min-limit: 0.662225
+      max-limit: 0.683825
+    rest_cadusd:
+      bid: 0.7350
+      ask: 0.7400
+      min-limit: 0.724575
+      max-limit: 0.7463

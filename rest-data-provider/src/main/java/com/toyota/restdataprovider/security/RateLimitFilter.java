@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String TOO_MANY_REQUEST_MESSAGE = "Too many requests – you have exceeded your rate limit. Please try again in a few seconds.";
+    private static final String TOO_MANY_REQUEST_MESSAGE = "Too many requests!!! you have exceeded your rate limit. Please try again in a few seconds.";
 
     private final ObjectMapper objectMapper;
     private final RateLimitService rateLimitingService;
@@ -38,7 +38,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        if(!request.getRequestURI().equals("/api/rates/**")){
+        final String requestURI = request.getRequestURI();
+
+        if(!requestURI.startsWith("/api/rates")){
             filterChain.doFilter(request,response);
             return;
         }

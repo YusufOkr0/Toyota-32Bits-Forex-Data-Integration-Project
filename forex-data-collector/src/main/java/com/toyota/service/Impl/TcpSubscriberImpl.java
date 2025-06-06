@@ -1,12 +1,11 @@
 package com.toyota.service.Impl;
 
 import com.toyota.config.SubscriberConfig;
-import com.toyota.service.CoordinatorService;
 import com.toyota.entity.Rate;
+import com.toyota.service.CoordinatorService;
 import com.toyota.service.SubscriberService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,9 +15,6 @@ import java.math.BigDecimal;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -58,7 +54,7 @@ public class TcpSubscriberImpl implements SubscriberService {
 
     @Override
     public void connect(String platformName) {
-        log.info("Tcp Subscriber: Attempting to connect to platform: {}", platformName);
+        log.info("connect: Attempting to connect to platform: {}", platformName);
         try {
             socket = new Socket(serverHost, serverPort);
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -69,21 +65,21 @@ public class TcpSubscriberImpl implements SubscriberService {
             String serverMessage = reader.readLine();
 
             if (serverMessage == null) {
-                log.error("Tcp Subscriber: Connection attempt to {} failed: Server closed connection without response.", platformName);
+                log.error("connect: Connection attempt to {} failed: Server closed connection without response.", platformName);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("ERROR")) {
-                log.error("Tcp Subscriber: Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
+                log.error("connect: Connection attempt to {} failed: Server returned error: {}.", platformName, serverMessage);
                 closeResources();
                 coordinator.onConnect(platformName, false);
             } else if (serverMessage.startsWith("SUCCESS")) {
-                log.info("Tcp Subscriber: Connection to platform: {} successfully.",platformName);
+                log.info("connect: Connection to platform: {} successfully.",platformName);
                 executorService.execute(() -> listenToIncomingRates(platformName));
                 coordinator.onConnect(platformName, true);
             }
 
         } catch (IOException e) {
-            log.error("Tcp Subscriber: Connection attempt to {} failed. Exception Message: {}.",platformName,e.getMessage(),e);
+            log.error("connect: Connection attempt to {} failed. Exception Message: {}.",platformName,e.getMessage(),e);
             closeResources();
             coordinator.onConnect(platformName, false);
         }
@@ -93,18 +89,18 @@ public class TcpSubscriberImpl implements SubscriberService {
     public void disConnect() {
         sendMessageToServer("disconnect");
         closeResources();
-        log.info("Tcp Subscriber: Disconnected from platform: TCP successfully.");
+        log.info("disConnect: Disconnected from platform: TCP successfully.");
     }
 
     @Override
     public void subscribe(String platformName, String rateName) {
-        log.info("Tcp Subscriber: Subscribing to rate: {} on platform: {}", rateName, platformName);
+        log.info("subscribe: Subscribing to rate: {} on platform: {}", rateName, platformName);
         sendMessageToServer(String.format("subscribe|%s_%s", platformName, rateName));
     }
 
     @Override
     public void unSubscribe(String platformName, String rateName) {
-        log.info("Tcp Subscriber: Unsubscribing from rate: {} on platform: {}", rateName, platformName);
+        log.info("unSubscribe: Unsubscribing from rate: {} on platform: {}", rateName, platformName);
         sendMessageToServer(String.format("unsubscribe|%s_%s", platformName, rateName));
     }
 
@@ -116,41 +112,60 @@ public class TcpSubscriberImpl implements SubscriberService {
 
 
     private void listenToIncomingRates(String platformName) {
-        log.info("Tcp Subscriber: Start to listen to incoming rates for platform: {}",platformName);
+        log.info("listenToIncomingRates: Start to listen to incoming rates for platform: {}", platformName);
         try {
             String serverMessage;
             while (!socket.isClosed() && (serverMessage = reader.readLine()) != null) {
-                if (serverMessage.startsWith("TCP_")) {
-                    String rateName = serverMessage.substring(4, 10);
-                    Rate rate = convertMessageToRate(serverMessage);
-
-                    if (receivedRates.contains(rateName)) {
-                        coordinator.onRateUpdate(platformName, rateName, rate);
-                    } else {
-                        receivedRates.add(rateName);
-                        coordinator.onRateAvailable(platformName, rateName, rate);
-                    }
-                }
+                processServerMessage(platformName, serverMessage);
             }
-
         } catch (IOException e) {
-            log.error("Tcp Subscriber: Server listening error for platform: {}",platformName,e);
+            log.error("listenToIncomingRates: Server listening error for platform: {}", platformName, e);
         } finally {
             closeResources();
             coordinator.onDisConnect(platformName);
         }
     }
 
+    private void processServerMessage(String platformName, String message) {
+        if (message.startsWith("TCP_")) {
+            handleRateMessage(platformName, message);
+        } else if (message.contains("INFO|Not subscribed to currency pair") ||
+                message.contains("INFO|Already subscribed to currency pair") ||
+                message.contains("ERROR|Invalid currency pair")) {
+            log.warn("listenToIncomingRates: Server Message: {}.", message);
+        }
+    }
+
+    private void handleRateMessage(String platformName, String message) {
+        String rateName = message.substring(4, 10);
+        Rate rate = convertMessageToRate(message);
+        if (rate == null) return;
+
+        if (receivedRates.contains(rateName)) {
+            coordinator.onRateUpdate(platformName, rateName, rate);
+        } else {
+            receivedRates.add(rateName);
+            coordinator.onRateAvailable(platformName, rateName, rate);
+        }
+    }
+
+
     private Rate convertMessageToRate(String message) {
-        String[] messageParts = message.split("\\|");
+        try {
+            String[] messageParts = message.split("\\|");
 
-        String rateName = messageParts[0];
-        BigDecimal bid = new BigDecimal(messageParts[1].split(":")[1]);
-        BigDecimal ask = new BigDecimal(messageParts[2].split(":")[1]);
-        String timeStampStr = messageParts[3].split(":", 2)[1];
+            String rateName = messageParts[0];
+            BigDecimal bid = new BigDecimal(messageParts[1].split(":")[1]);
+            BigDecimal ask = new BigDecimal(messageParts[2].split(":")[1]);
+            String timeStampStr = messageParts[3].split(":", 2)[1];
 
-        Instant timeStamp = Instant.parse(timeStampStr);
-        return new Rate(rateName, bid, ask, timeStamp);
+            Instant timeStamp = Instant.parse(timeStampStr);
+            return new Rate(rateName, bid, ask, timeStamp);
+
+        } catch (Exception e) {
+            log.error("convertMessageToRate: Error when parsing incoming message to rate object: {}.",e.getMessage(),e);
+            return null;
+        }
     }
 
     private void sendMessageToServer(String message) {
@@ -166,7 +181,7 @@ public class TcpSubscriberImpl implements SubscriberService {
             if (writer != null) writer.close();
             if (socket != null) socket.close();
         } catch (IOException e) {
-            log.error("Tcp Subscriber: Error closing connection: {} ",e.getMessage(),e);
+            log.error("closeResources: Error closing connection: {} ",e.getMessage(),e);
         } finally {
             socket = null;
             reader = null;

@@ -43,5 +43,17 @@ public class ForexUser {
         this.updatedAt = LocalDateTime.now();
     }
 
+    @Override
+    public String toString() {
+        return "ForexUser{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", pricingPlan=" + pricingPlan +
+                '}';
+    }
 
 }

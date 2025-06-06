@@ -44,6 +44,7 @@ public class ForexDataCollector {
                     appConfig
             );
 
+
         } catch (RuntimeException e) {
             log.error("Application run failed. Error: {}", e.getMessage());
             throw new RuntimeException(e);

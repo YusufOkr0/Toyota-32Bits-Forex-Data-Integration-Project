@@ -1,26 +1,31 @@
+<div align="center" class="text-center">
+<h1>TCP FOREX DATA PROVIDER</h1>
 
-<h1 align="center">TCP FX Data Provider</h1>
-
-[![Java Version](https://img.shields.io/badge/Java-17-blue.svg)](https://openjdk.java.net/projects/jdk/17/)
-[![Build Tool](https://img.shields.io/badge/Build-Maven-orange.svg)](https://maven.apache.org/)
-[![Docker Support](https://img.shields.io/badge/Docker-Supported-blue.svg?logo=docker)](https://www.docker.com/)
+<img alt="Java" src="https://img.shields.io/badge/Java-007396.svg?style=flat&logo=java&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+<img alt="Maven" src="https://img.shields.io/badge/Maven-C71A36.svg?style=flat&logo=apachemaven&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED.svg?style=flat&logo=Docker&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
+<br>
 
 > A Java-based TCP server application that simulates and broadcasts real-time Foreign Exchange (FX) rate data to subscribed clients.
 
-This project provides a robust TCP server built using *Java NIO* for handling client connections efficiently. It simulates FX rate fluctuations, including configurable volatility and periodic spikes, based on settings in an `application.properties` file or environment variables. Clients can connect, authenticate, and subscribe to specific currency pairs to receive real-time updates.
+This project provides a TCP server built using *Java NIO* for handling client connections efficiently. It simulates FX rate fluctuations, including configurable volatility and periodic spikes, based on settings in
+an `application.properties` file or environment variables. Clients can connect, authenticate, and subscribe to specific currency pairs to receive real-time updates.
+</div>
 
-## Table of Contents
-*   [Core Components](#core-components)
-*   [Features](#features)
-*   [Getting Started](#getting-started)
-    *   [Configuration](#configuration)
-    *   [Running the Application](#running-the-application)
-        *   [Directly (Executable JAR)](#directly-executable-jar)
-        *   [Using Docker](#using-docker)
-*   [Usage (Testing with Telnet)](#usage-testing-with-telnet)
-*   [Contact](#contact)
 
-### Core Components
+##  Table of Contents
+
+* [Core Components](#core-components)
+* [Features](#features)
+* [Installation](#installation)
+
+    * [Quick Start (With Default Settings)](#quick-start-with-default-settings)
+    * [Custom Setup](#custom-setup)
+* [Usage (Testing with Telnet)](#usage-testing-with-telnet)
+* [Contact](#contact)
+
+
+## Core Components
 
 1.  **`TcpDataProvider`**: The main entry point. Loads configuration, initializes, and starts the core services (`AuthService`, `FxDataServer`, `FxDataPublisher`).
 2.  **`FxDataServer`**: Handles TCP connections using Java NIO. Accepts clients, processes commands (`connect`, `subscribe`, etc.), and manages authentication via `AuthService`.
@@ -39,112 +44,125 @@ This project provides a robust TCP server built using *Java NIO* for handling cl
 *    **`Flexible Configuration:`** Control broadcast frequency, normal rate volatility (min/max change), and periodic price spikes (interval, percentage).Settings managed via `application.properties` file or overridden by environment variables.
 *    **`Docker Support:`** Includes a `Dockerfile` for easy containerization and deployment.
 
-## Getting Started
+## Installation
 
-### Configuration
+### Quick Start (With Default Settings)
 
-Configuration is managed via the `src/main/resources/application.properties` file. Values can be overridden by setting corresponding environment variables (e.g., `SERVER_PORT` overrides `server.port`).
+This section guides you through launching the Application quickly using **Docker** (recommended). You’ll also learn how to override configuration and load custom initial FX rates using a Json file.
 
-**Example `src/main/resources/application.properties`:**
+---
 
-```properties
-# Server Settings
-server.port=8090
+### Run with Docker
 
-# Supported Currency Pairs (Comma-separated)
-currency.pairs=TCP_USDTRY,TCP_EURUSD,TCP_GBPUSD
+If Docker is installed on your system, you can get the application up and running with minimal setup.
 
-# Initial Rates and Limits (Define for each pair in currency.pairs)
-tcp_usdtry.bid=37.9973
-tcp_usdtry.ask=38.0333
-tcp_usdtry.min.limit=35.2134
-tcp_usdtry.max.limit=40.1324
-
-tcp_eurusd.bid=1.0848
-tcp_eurusd.ask=1.0949
-tcp_eurusd.min.limit=1.01254
-tcp_eurusd.max.limit=1.21423
-
-tcp_gbpusd.bid=1.295
-tcp_gbpusd.ask=1.395
-tcp_gbpusd.min.limit=1.11245
-tcp_gbpusd.max.limit=1.42142
-
-# Rate Simulation Settings
-# Minimum change percentage per update cycle (decimal format, e.g., 0.001 = 0.1%)
-minimum.rate.change=0.001
-# Maximum change percentage per update cycle (decimal format)
-maximum.rate.change=0.004
-
-# Broadcast frequency in milliseconds
-publish.frequency=10000
-
-# Spike Simulation Settings
-# Spike change percentage (decimal format, e.g., 0.011 = 1.1%)
-spike.percentage=0.011
-# Spike occurs every N update cycles (e.g., 20 means spike every 20 publishes)
-spike.interval=20
-
-# User Credentials (Format: username|password, Comma-separated)
-user.credentials=yusuf|pass,admin|admin
-
-```
-
-### Running the Application
-
-#### Directly (Executable JAR)
-
-After building the project (`mvn clean package`), run the JAR file:
+#### 🔹 Pull the Docker Image
 
 ```bash
-java -jar target/tcp-data-provider.jar
+docker pull yusufokr0/tcp-data-provider
 ```
 
-The server will start using the configuration baked into the JAR or overridden by environment variables.
+#### 🔹 Start the Container
 
-#### Using Docker
+```bash
+docker run -d --name fx-provider -p 8090:8090 yusufokr0/tcp-data-provider
+```
 
-The included `Dockerfile` allows you to containerize the application.
+> These two step will start the application with the default settings by pulling the image from DockerHub.
 
-1.  **Build the Docker image:** (Ensure you have built the JAR first with `mvn clean package`)
-    ```bash
-    docker build -t tcp-fx-provider .
-    ```
+---
 
-2.  **Run the Docker container:**
-    ```bash
-    # Run with default settings baked into the JAR
-    docker run -d -p 8090:8090 --name fx-provider tcp-fx-provider
-    ```
+## Custom setup
 
-    **Note:** The Docker container uses the `application.properties` baked into the JAR by default. To override configuration for Docker, use environment variables (`-e` flag). This is the recommended method for containers.
+The application supports dynamic configuration through environment variables.
 
-    *   **Example: Overriding Port and Credentials:**
-        ```bash
-        docker run -d -p 9999:9999 \
-          -e SERVER_PORT=9999 \
-          -e USER_CREDENTIALS="guest|guest" \
-          --name fx-provider-custom tcp-fx-provider
-        ```
+| Property Key               | Environment Variable                 | Description                                         |         |
+| -------------------------- | ------------------------------------ | --------------------------------------------------- | ------- |
+| `minimum.rate.change`      | `MINIMUM_RATE_CHANGE`                | Minimum bid/ask change per tick (decimal)           |         |
+| `maximum.rate.change`      | `MAXIMUM_RATE_CHANGE`                | Maximum bid/ask change per tick (decimal)           |         |
+| `publish.frequency`        | `PUBLISH_FREQUENCY`                  | Frequency of updates (in milliseconds)              |         |
+| `spike.percentage`         | `SPIKE_PERCENTAGE`                   | Percent change during a spike (decimal)             |         |
+| `spike.interval`           | `SPIKE_INTERVAL`                     | Interval (in ticks) between simulated spikes        |         |
+| `user.credentials`         | `USER_CREDENTIALS`                   | Comma-separated list of valid users                 |         | 
 
-    *   **Example: Overriding Currency Pairs (Important!):**
-        If you override `CURRENCY_PAIRS`, you **must** also provide the initial `bid`, `ask`, `min.limit`, and `max.limit` values for **each** new pair as environment variables. The variable names follow the pattern `PAIRNAME_PROPERTYNAME` (uppercase, dots replaced with underscores).
+### Load Initial FX Rates from Custom JSON (Optional)
 
-        ```bash
-        docker run -d -p 8090:8090 \
-          -e CURRENCY_PAIRS="BTCUSD,ETHUSD" \
-          -e BTCUSD_BID="60000.50" \
-          -e BTCUSD_ASK="60001.75" \
-          -e BTCUSD_MIN_LIMIT="50000.00" \
-          -e BTCUSD_MAX_LIMIT="70000.00" \
-          -e ETHUSD_BID="3000.10" \
-          -e ETHUSD_ASK="3000.90" \
-          -e ETHUSD_MIN_LIMIT="2500.00" \
-          -e ETHUSD_MAX_LIMIT="3500.00" \
-          -e USER_CREDENTIALS="trader1|secret" \
-          --name fx-provider-crypto tcp-fx-provider
-        ```
-        *(Remember to provide all four required initial values for every pair listed in `CURRENCY_PAIRS`)*
+By default, the application starts with a predefined set of currency rate data from an embedded `initial-rates.json` file. However, you can override this by providing your own JSON file inside the container at:
+
+```
+/conf/initial-rates.json
+```
+
+If the file exists at that location, it will be loaded at startup. Otherwise, the default configuration bundled inside the JAR will be used.
+
+---
+
+####  JSON Format Example
+
+Here's an example of a valid `initial-rates.json` file:
+
+```json
+[
+  {
+    "rateName": "TCP_USDTRY",
+    "bid": 38.4426,
+    "ask": 38.8584,
+    "minLimit": 37.9134,
+    "maxLimit": 39.1324
+  },
+  {
+    "rateName": "TCP_EURUSD",
+    "bid": 1.1266,
+    "ask": 1.1369,
+    "minLimit": 1.10654,
+    "maxLimit": 1.14654
+  },
+  {
+    "rateName": "TCP_GBPUSD",
+    "bid": 1.3273,
+    "ask": 1.3573,
+    "minLimit": 1.30245,
+    "maxLimit": 1.34142
+  }
+]
+```
+
+
+###  Run with Docker + Custom configurations
+
+To run the container using your own rates file:
+
+If you want a more maintainable way to run the application with custom configurations and mounted files, you can use **Docker Compose**.
+
+Here’s a sample `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  fx-provider:
+    image: yusufokr0/tcp-data-provider
+    container_name: fx-provider
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./path/to/your/own/config/file/initial-rates.json:/conf/initial-rates.json
+    environment:
+      SERVER_PORT: 8090
+      PUBLISH_FREQUENCY: 7000
+      MINIMUM_RATE_CHANGE: 0.001
+      MAXIMUM_RATE_CHANGE: 0.002
+      SPIKE_INTERVAL: 20
+      SPIKE_PERCENTAGE: 0.011
+      USER_CREDENTIALS: user|pass,admin|admin,custom|custom
+```
+
+#### ➤ Run it:
+
+```bash
+docker-compose up -d
+```
+
 
 
 ## Usage (Testing with Telnet)
@@ -164,14 +182,10 @@ Once connected, send commands by typing them and pressing **Enter**:
     ```
     connect|your_username|your_password
     ```
-    *(Expect `SUCCESS|CONNECTED`)*
-
 *   **Subscribe:**
     ```
     subscribe|CURRENCY_PAIR
     ```
-    *(Expect `SUCCESS|Subscribed to currency pair: CURRENCY_PAIR` and start receiving data)*
-
 *   **View Data Stream:** (Pushed by server after successful subscription)
     ```
     CURRENCY_PAIR|B:BID_PRICE|A:ASK_PRICE|T:TIMESTAMP
@@ -183,13 +197,11 @@ Once connected, send commands by typing them and pressing **Enter**:
     ```
     unsubscribe|CURRENCY_PAIR
     ```
-    *(Expect `SUCCESS|Unsubscribed from currency pair: CURRENCY_PAIR`)*
 
 *   **Disconnect:**
     ```
     disconnect
     ```
-    *(Server closes the connection)*
 
 
 ### Server Responses
