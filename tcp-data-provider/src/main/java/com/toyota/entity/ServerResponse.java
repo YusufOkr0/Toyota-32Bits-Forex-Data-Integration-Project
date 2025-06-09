@@ -27,4 +27,5 @@ public enum ServerResponse {
     public String getMessage(String... args) {
         return String.format(messageTemplate, (Object[]) args);
     }
+
 }

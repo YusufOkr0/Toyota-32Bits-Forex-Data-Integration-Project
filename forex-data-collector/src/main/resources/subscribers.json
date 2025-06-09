@@ -15,5 +15,22 @@
       "baseUrl": "http://127.0.0.1:8092",
       "subscriptionDelayMs": 7000
     }
+  },
+  {
+    "platformName": "TCP",
+    "className": "com.toyota.service.Impl.TcpSubscriberImpl",
+    "exchangeRates": [
+      "USDTRY",
+      "EURUSD",
+      "GBPUSD"
+    ],
+    "connectionRetryLimit": 5,
+    "retryDelaySeconds": 10,
+    "properties": {
+      "username": "admin",
+      "password": "admin",
+      "host": "127.0.0.1",
+      "port": 8090
+    }
   }
 ]
