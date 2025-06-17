@@ -4,7 +4,7 @@
 
 <img width="300" src="assets/32Bit_logo.png" alt="32bit">
 
-<h1>TOYOTA-32BIT <br> FOREX-DATA-INTEGRATION-PROJECT</h1>
+<h1>TOYOTA-32BIT <br> FOREX DATA INTEGRATION PROJECT</h1>
 <p><em>Empowering Real-Time Forex Insights for Smart Decisions</em></p>
 
 <p><em>Built with the tools and technologies:</em></p>
@@ -207,6 +207,8 @@ Below is an example dashboard panel showing USD/TRY bid and ask prices in real t
   <em>Live tracking of USD/TRY bid and ask prices via OpenSearch Dashboards</em>
 </div>
 
+<br>
+
 > The dashboard above is just an example I’ve built to demonstrate the possibilities. To explore the forex data flow yourself, you’ll need to create your own visualizations and bring them together into a dashboard that fits your needs.
 
 ## Contact
@@ -215,10 +217,5 @@ For any questions, suggestions, or feedback regarding this project, feel free to
 
 
 - **Email:** yusufokr0@gmail.com
-- **LinkedIn:** [www.linkedin.com/in/yusufokur0](www.linkedin.com/in/yusufokur0)
-
-
-
-
-
+- **LinkedIn:** [www.linkedin.com/in/yusufokur0](https://www.linkedin.com/in/yusufokur0)
 
