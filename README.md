@@ -9,6 +9,10 @@
 
 <p><em>Built with the tools and technologies:</em></p>
 
+![visitors](https://hits.sh/github.com/yusufokr0/Toyota-32Bits-Forex-Data-Integration-Project.svg)
+
+
+
 
 <img alt="Java" src="https://img.shields.io/badge/Java-007396.svg?style=flat&logo=java&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
 <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-6DB33F.svg?style=flat&logo=springboot&logoColor=white" class="inline-block mx-1" style="margin: 0px 2px;">
