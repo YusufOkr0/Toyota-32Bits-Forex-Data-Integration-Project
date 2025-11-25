@@ -9,7 +9,7 @@
 
 <p><em>Built with the tools and technologies:</em></p>
 
-![visitors](https://hits.sh/github.com/yusufokr0/Toyota-32Bits-Forex-Data-Integration-Project.svg)
+![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2FYusufOkr0%2FToyota-32Bits-Forex-Data-Integration-Project&label=Visitors&icon=cursor&color=%23198754&message=&style=flat&tz=UTC)
 
 
 
