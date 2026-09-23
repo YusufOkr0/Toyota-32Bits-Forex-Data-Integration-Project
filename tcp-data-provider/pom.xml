@@ -13,8 +13,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <Log4j-version>2.23.1</Log4j-version>
-        <jackson-version>2.18.2</jackson-version>
+        <Log4j-version>2.25.5</Log4j-version>
+        <jackson-version>2.18.9</jackson-version>
     </properties>
 
     <dependencies>
