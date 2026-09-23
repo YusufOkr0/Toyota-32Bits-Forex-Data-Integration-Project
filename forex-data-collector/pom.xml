@@ -13,11 +13,11 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <jackson-version>2.18.2</jackson-version>
+        <jackson-version>2.18.9</jackson-version>
         <redis-version>5.2.0</redis-version>
-        <kafka-version>3.8.0</kafka-version>
-        <log4j2-version>2.24.3</log4j2-version>
-        <email-sender>2.0.1</email-sender>
+        <kafka-version>3.9.2</kafka-version>
+        <log4j2-version>2.25.5</log4j2-version>
+        <email-sender>2.0.2</email-sender>
         <graalvm-polyglot-version>24.2.1</graalvm-polyglot-version>
         <junit-version>5.12.2</junit-version>
     </properties>
